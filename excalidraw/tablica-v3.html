@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EKSTRAKTOR_DXF V3 — tablica projektu</title>
+<style>
+  :root{--ink:#212529;--muted:#868e96;--line:#dee2e6;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:#f8f9fa;line-height:1.5;}
+  .wrap{max-width:1400px;margin:0 auto;padding:24px;}
+  header.top{background:linear-gradient(135deg,#1971c2,#0b3d66);color:#fff;border-radius:14px;
+    padding:26px 30px;margin-bottom:22px;box-shadow:0 4px 18px rgba(11,61,102,.25);}
+  header.top h1{margin:0;font-size:34px;letter-spacing:.5px;}
+  header.top p{margin:8px 0 0;color:#dbeafe;font-size:15px;}
+  .badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);
+    padding:3px 10px;border-radius:999px;font-size:12px;margin-top:12px;}
+  h2.zone{font-size:15px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);
+    margin:26px 0 12px;border-bottom:2px solid var(--line);padding-bottom:6px;}
+  .grid{display:grid;gap:14px;}
+  .g3{grid-template-columns:1.6fr 1fr 1fr;}
+  .g2{grid-template-columns:1fr 1fr;}
+  .g5{grid-template-columns:repeat(5,1fr);}
+  .g6{grid-template-columns:repeat(6,1fr);}
+  @media(max-width:1100px){.g3,.g2,.g5,.g6{grid-template-columns:1fr 1fr;}}
+  @media(max-width:680px){.g3,.g2,.g5,.g6{grid-template-columns:1fr;}}
+  .card{background:#fff;border:1px solid var(--line);border-left:6px solid #adb5bd;border-radius:10px;
+    padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .card h3{margin:0 0 8px;font-size:15px;}
+  .card ul{margin:0;padding-left:18px;}
+  .card li{font-size:13px;margin:3px 0;color:#343a40;}
+  .goal{border-left-color:#2f9e44;background:#ebfbee;} .goal h3{color:#2b8a3e;}
+  .limit{border-left-color:#1971c2;background:#e7f5ff;} .limit h3{color:#1864ab;}
+  .prob{border-left-color:#e03131;background:#fff5f5;} .prob h3{color:#c92a2a;}
+  .hist{border-left-color:#868e96;background:#f1f3f5;} .hist h3{color:#495057;}
+  .pipe{border-left-color:#1971c2;} .pipe h3{color:#1864ab;}
+  .pipe.hot{border-left-color:#f08c00;background:#fff9db;} .pipe.hot h3{color:#e67700;}
+  .meta{border-left-color:#7048e8;} .meta h3{color:#5f3dc4;}
+  .sys{border-left-color:#e8590c;} .sys h3{color:#d9480f;}
+  .skill{border-left-color:#2f9e44;background:#ebfbee;} .skill h3{color:#2b8a3e;}
+  .road{border-left-color:#f08c00;background:#fff9db;} .road h3{color:#e67700;}
+  .loop{background:#fff9db;border:2px solid #f59f00;border-radius:10px;padding:14px 18px;
+    margin:16px 0;font-weight:600;color:#e67700;font-size:15px;}
+  .io{font-size:13px;color:#1971c2;margin:4px 0 10px;}
+  footer{color:var(--muted);font-size:12px;margin-top:26px;text-align:center;}
+</style></head>
+<body><div class="wrap">
+<header class="top">
+  <h1>EKSTRAKTOR_DXF — V3</h1>
+  <p>Projekt: narzedzie PRODUKCYJNE + system nauki / testow / oceny / sprawdzania poprawnosci — ma byc skuteczniejszy niz V2 i V1.</p>
+  <span class="badge">Wersja 3 · na bazie V1 i V2 · 2026-07-03</span>
+</header>
+
+<h2 class="zone">Cel · Ograniczenia · Problemy</h2>
+<div class="grid g3">
+  <div class="card goal"><h3>CEL NADRZEDNY V3</h3><ul><li>Zaprojektowac cale narzedzie PRODUKCYJNE oraz systemy: nauki, testowania, oceny wynikow i sprawdzania poprawnosci.</li><li>Modularnie — rozbudowa, poprawki i dodawanie BEZ wplywu na to, co juz dziala.</li><li>DXF szybciej niz recznie; sprawdzanie NIE dluzej niz narysowanie od nowa.</li></ul></div>
+  <div class="card limit"><h3>TWARDE OGRANICZENIA</h3><ul><li>Zero blednych DXF — elementy palone laserem, blad = realny koszt.</li><li>Otwory swiete, kontur zamkniety, skala 1:1, wynik wysrodkowany (0,0).</li><li>Niepewne -&gt; _DO_SPRAWDZENIA (czlowiek). Nie zgadujemy geometrii.</li></ul></div>
+  <div class="card prob"><h3>PROBLEMY (z V1 / V2)</h3><ul><li>Gubi otwory NIEokragle -&gt; element bez otworow trafia na laser.</li><li>Cechy odseparowane (slot / fasola / wyspa) wypadaja, a wymiar zewnetrzny sie zgadza.</li><li>Sprawdzanie za dlugie; brak zaufania -&gt; kontrola 100% (zabija zysk z auto).</li></ul></div>
+</div>
+
+<h2 class="zone">Historia / kontekst — na czym budujemy</h2>
+<div class="grid g2">
+  <div class="card hist"><h3>V1 — PROTOTYP (dziala)</h3><ul><li>CLI + skill /wyciagnij-dxf; klastrowanie + ranking widokow; zapis 1:1.</li><li>~19/20 pozycji auto. Wiedza dziedzinowa: konwencje klientow, magenta=giecie, lustra P/L, bloki INSERT, zera wiodace.</li><li>Pulapki 1-8: gubienie otworow, rzut izometryczny, &#x27;pierscien&#x27;, okragle niewyciagalne.</li></ul></div>
+  <div class="card hist"><h3>V2 — ORKIESTRATOR + WERYFIKATOR (dziala, V2&gt;=V1 42/42)</h3><ul><li>Orkiestrator -&gt; kategorie szukania (wtyczki) -&gt; weryfikator 8 bramek QC -&gt; galeria.</li><li>Samodoskonalenie: logger decyzje.csv (--korpus), szkolenia/ (manual upgrader), destylacja -&gt; wnioski.md.</li><li>Znane bledy: tabelka zamiast rozwiniecia, zgubione sloty, podwojne/wspolsrodkowe okregi.</li></ul></div>
+</div>
+
+<h2 class="zone">Algorytm V3 — pipeline przetwarzania rysunku (pkt 1-6)</h2>
+<div class="io">WEJSCIE: rysunek zlozeniowy DWG/DXF + wykaz materialowy .xlsx</div>
+<div class="grid g6">
+  <div class="card pipe"><h3>1. SPOSOBY / TYPY</h3><ul><li>V1 · V2 · Orkiestrator</li><li>Okreslanie typu rysunku</li><li>(przyklady rysunkow per typ)</li></ul></div>
+  <div class="card pipe"><h3>2. ANALIZA</h3><ul><li>Kolor: kontur=2 zolty, wymiar=3, giecie=6 magenta</li><li>Warstwa: 1NN = poz. NN</li><li>MITTE=os, bloki INSERT (DE)</li></ul></div>
+  <div class="card pipe hot"><h3>3. KONTURY ZAMKNIETE</h3><ul><li>Liczenie otworow — TEZ NIEokragle!</li><li>Liczenie konturow (shapely.polygonize)</li><li>Wizualne sprawdzenie</li></ul></div>
+  <div class="card pipe"><h3>4. SKALA</h3><ul><li>Dopasowanie do wymiarow z wykazu</li><li>bbox SPLINE przeszacowuje</li><li>-&gt; bramka dwustopniowa</li></ul></div>
+  <div class="card pipe"><h3>5. SPRAWDZANIE WYMIAROW</h3><ul><li>X, Y ±1 mm vs Abmess</li><li>zgrubna przed zapisem</li><li>scisla z realnych extents po zapisie</li></ul></div>
+  <div class="card pipe"><h3>6. KATEGORIA TRUDNOSCI</h3><ul><li>🟢 Latwy — auto</li><li>🟡 Sredni</li><li>🟠 Trudny</li><li>🔴 Potrzebna pomoc czlowieka</li></ul></div>
+</div>
+<div class="io">WYJSCIE: DXF 1:1 wysrodkowany + status (semafor) + PNG (czarne tlo) + wpis do korpusu</div>
+
+<h2 class="zone">Meta-metoda — jak budujemy i wybieramy sposoby (pkt 7-11)</h2>
+<div class="grid g5">
+  <div class="card meta"><h3>7. ALGORYTM Z ELEMENTOW</h3><ul><li>Skladamy pipeline z klockow (modularnie)</li><li>Zapis W FORMIE GRAFOW</li><li>wezly = kroki, krawedzie = przeplyw</li></ul></div>
+  <div class="card meta"><h3>8. SPOSOB OCENY</h3><ul><li>Metryki: otwory OK, kontur zamkniety,</li><li>wymiar ±1 mm, zgodnosc z wykazem/wzorcem</li><li>semafor + POWOD statusu</li></ul></div>
+  <div class="card meta"><h3>9. WNIOSKI</h3><ul><li>Co zadzialalo, co zawiodlo i dlaczego</li><li>Zapis do wnioski.md</li><li>(destylacja z decyzje.csv)</li></ul></div>
+  <div class="card meta"><h3>10. NOWE ZASADY / SPOSOBY</h3><ul><li>Trudny przypadek -&gt; nowa regula</li><li>+ nowy test regresji + rysunek do korpusu</li><li>Awans reguly ZA POTWIERDZENIEM czlowieka</li></ul></div>
+  <div class="card meta"><h3>11. TRZY SPOSOBY -&gt; OCENA</h3><ul><li>Jesli sie da: zrob 3 metody rownolegle</li><li>Ocen kazda, wybierz najlepsza</li><li>(glosowanie / porownanie wynikow)</li></ul></div>
+</div>
+
+<h2 class="zone">12. Systemy — moduly niezalezne</h2>
+<div class="grid g5">
+  <div class="card sys"><h3>SYSTEM TWORZENIA ZASADY</h3><ul><li>Jak z obserwacji powstaje jawna regula</li><li>Format wniosku -&gt; akceptacja czlowieka</li><li>Uczenie = jawne reguly, nie czarna skrzynka</li></ul></div>
+  <div class="card sys"><h3>SYSTEM TESTOWY</h3><ul><li>Regresja (PASS = warunek oddania zmiany)</li><li>Znane bledy XFAIL -&gt; XPASS</li><li>Benchmark vs V2/V1 (encja-po-encji)</li></ul></div>
+  <div class="card sys"><h3>SYSTEM PRODUKCYJNY</h3><ul><li>Musi byc dokladniej okreslony</li><li>Zoptymalizowany (szybki)</li><li>Wiecej rzeczy skryptowo, mniej analizy AI</li></ul></div>
+  <div class="card sys"><h3>SYSTEM NAUKI</h3><ul><li>Tworzenie i porownanie ze starymi</li><li>Etykietowanie (labeling)</li><li>Jakie sposoby nauki?</li></ul></div>
+  <div class="card sys"><h3>SPOSOBY SPRAWDZANIA WIZUALNEGO</h3><ul><li>Zakreslenie przez czlowieka</li><li>Zakreslenie przez AI</li><li>Nakladka wynik-na-zrodlo (kompletnosc)</li></ul></div>
+</div>
+
+<div class="loop">PETLA SAMODOSKONALENIA:&nbsp; wynik &rarr; ocena (8) &rarr; wnioski (9) &rarr; nowa regula / sposob (10) &rarr; lepszy pipeline (1-6) &rarr; ponowny test i benchmark</div>
+
+<h2 class="zone">Skills (13) · Roadmap</h2>
+<div class="grid g2">
+  <div class="card skill"><h3>13. STWORZYC ODPOWIEDNIE SKILLS</h3><ul><li>Skille + procedury do sprawniejszego wyszukiwania wzorcow.</li><li>Zoptymalizowane dzialanie produkcyjne.</li><li>Bazuja na /wyciagnij-dxf z V1/V2 — recall wiedzy przed ekstrakcja.</li></ul></div>
+  <div class="card road"><h3>NASTEPNE KROKI (roadmap)</h3><ul><li>1) Ta tablica -&gt; poukladac i podopisac. 2) PROMPT do systemu.</li><li>3) PLAN. 4) SYSTEM (moduly). 5) Dzialajaca wersja V3.</li><li>6) Udoskonalanie przez testy i nauke. Cel: V3 &gt; V2 &gt; V1.</li></ul></div>
+</div>
+
+<footer>Wygenerowano na podstawie opis-tablicy.txt + CLAUDE.md (V1, V2). Edytowalna wersja: tablica-v3.excalidraw</footer>
+</div></body></html>

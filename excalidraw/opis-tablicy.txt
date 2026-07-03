@@ -1,0 +1,63 @@
+Algorytm
+1. Sposoby
+- [ ] V1
+- [ ] V2
+- [ ] Orkiestrator
+- [ ] Określanie typów (przykłady rysunków)
+2. Analiza
+- [ ] Kolor
+- [ ] Warstwa
+3. Sprawdzanie kontorow zamkniętych
+- [ ] Liczenie otworów
+- [ ] Liczenie kontorow zamkniętych
+- [ ] Wizualne sprawdzenie
+4. Skala
+5. Sprawdzanie wymiarów
+6. Kategoria trudności
+- [ ] Łatwy
+- [ ] Średni
+- [ ] Trudny
+- [ ] Potrzebna pomoc człowieka
+7. Napisanie algorytmu z elementów
+- [ ] W formie grafów
+8. Sposób oceny
+9. Wnioski
+10. Tworzenie nowych zasad lub nowych sposobów
+11. Jeżeli jest możliwość zrobienia na 3 sposoby, tworzymy 3 sposoby i oceniamy
+12. Systemy 
+System tworzenia zasady
+System testowy
+System produkcyjny
+- [ ] Musi być dokładniej określony 
+- [ ] Zoptymalizowany
+- [ ] Więcej rzeczy skryptowo, mniej analizy ai
+System nauki
+- [ ] Tworzenie i porównanie ze starymi
+- [ ] Etykietowanie 
+- [ ] Jakie sposoby nauki 
+Sposoby sprawdzania wizualnego
+- [ ] Zakreślenie przez człowieka
+- [ ] Zakreślenie przez ai
+13. Stworzyć odpowiednie skills
+[ ] Skile i procedury dla sprawniejszego wyszukiwania wzorców i zoptymalizowane działanie produkcyjne 
+
+Chcę zaprojektować całe narzędzie produkcyjne, ale też system nauki, testowania, oceny wyników i sprawdzania poprawności. 
+
+Nie mogę pozwolić sobie na wydanie błędnych rysunków dxf detali. 
+Elementy będą palone na laserze i błędne narysowanie powoduje koszta. 
+
+Tworzone rysunki muszą być zrobione szybciej niż ręcznie, a sprawdzanie nie może więcej zabierać niż stworzenie od nowa. 
+
+Dlatego potrzebuje żeby to było stworzone modułowo. I była możliwość rozbudowy, poprawek i dodawania, bez wpływu na działanie. 
+
+Pomysł na system oceny. 
+Problemy: 
+Mam zrobione i działające 2 wersje już. Ale zdarzają się że nie wykrywa i tworzy elementy bez otworów (otwory inne niż okrągłe)
+Dodatkowo długo trwa sprawdzanie i gdy zaczyna się mylić muszę sprawdzać 100% bo nie ufam metodom. 
+
+
+Napisz mi prompt do systemu.
+
+
+Napisz mi excalidraw na podstawie powyższego. Ja sobie to poukładam ładnie, następnie zrobimy prompt a potem plan i system . 
+Potem zrobimy działającą wersję i będziemy udoskonalać, poprzez testy i naukę.
