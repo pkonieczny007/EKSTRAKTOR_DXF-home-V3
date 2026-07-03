@@ -1,0 +1,9 @@
+- [SBM legenda lustro](sbm-legenda-lustro.md) — przy numerze pozycji as drawn/mirrored, poz.2 = lustro; trzymac sie opisu, nie zgadywac reki
+- [SBM okragle niewyciagalne](sbm-okragle-niewyciagalne.md) — plaszcze zwiniete, rysunki wariantowe i kola segmentowane nie sa auto-ekstrahowalne; QC po bbox to za malo
+- [Giecie PHANTOM kolor6](giecie-phantom-kolor6.md) — u czesci klientow linia giecia to PHANTOM kolor 6, silnik myli z osia; przy parach P/L giecia musza zostac
+- [Krotkie nazwy bloki zero](krotkie-nazwy-bloki-zero.md) — rysunki bez SL: zero wiodace w pliku, geometria w blokach INSERT, niemieckie linetypy (MITTE=os)
+- [Giecie kiedy nanosic P/L skos](giecie-kiedy-nanosic-pl-skos.md) — linie giecia tylko dla par P/L albo gdy giecie pod skosem; nie-P/L z gieciem prostym bez linii
+- [Otwory wspolsrodkowe zdublowane](otwory-wspolsrodkowe-zdublowane.md) — podwojny okrag (przelot+poglebienie) i duplikaty: zostaw najmniejszy, reszte skasuj
+- [Cechy odseparowane region+warstwa](cechy-odseparowane-region-warstwa.md) — klaster gubi fasole/otwory-wyspy i lapie tabelke; ratunek region+warstwa + liczniki kompletnosci (nakladka, okregi, kontury wewn.)
+- [Technologia Schweissgruppe auto](technologia-schweissgruppe-auto.md) — spaw z tekstu "Schweissgruppe" w DWG, giecie z kolor6; GS/G/S/brak automatycznie (obrobka i pojedyncze spawy z TIF)
+- [Konwersja GstarCAD retry, TIF czerwono](konwersja-gstarcad-retry-tif-czerwono.md) — batch GstarCAD potrzebuje retry; odtworzenie z TIF tylko w ostatecznosci, na czerwono, do sprawdzenia

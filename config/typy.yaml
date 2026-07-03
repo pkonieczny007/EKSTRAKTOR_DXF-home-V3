@@ -1,0 +1,60 @@
+# Baza typow rysunkow V3 (rosnie przez system nauki - CLAUDE.md "Typowanie").
+# Rysunek moze miec WIECEJ NIZ JEDEN typ (np. sbm_kolorowa + okragle_niewyciagalne).
+# Typ -> profil ustawien pipeline'u (ktore silniki, jakie progi).
+#
+# Pola typu:
+#   opis        - co to za konwencja (dla czlowieka)
+#   wykrywanie  - heurystyki (uzywa produkcja/typowanie.py); "reczne" = tylko czlowiek
+#   silniki     - ktore silniki wariantow uruchamiac (klucze z config/warianty.yaml)
+#   przyklady   - folder z rysunkami referencyjnymi (zasady/przyklady/<typ>/)
+#   reguly      - plik regul (zasady/reguly/<typ>.md) - [plan] dopoki nie istnieje
+#   status      - dziala / szkic / plan
+#
+# NOWY TYP wchodzi przez zasady/propozycje/ -> testy golden -> merge (CLAUDE.md zasada 8).
+
+typy:
+  lantek_1nn:
+    opis: "Lantek-style: warstwa 1NN = pozycja NN (101 -> p1); rysunek w skali"
+    wykrywanie:
+      warstwy_regex: '^1\d\d$'
+    silniki: [w_b]
+    przyklady: zasady/przyklady/lantek_1nn/
+    status: dziala          # obsluguje kategoria struktura (technika A)
+
+  sbm_kolorowa:
+    opis: "SBM 1-warstwowa: KOLOR koduje role - kontur=2 zolty, wymiary=3, giecie=6 magenta"
+    wykrywanie:
+      kolory_geometrii: [2, 3, 6]
+      jedna_warstwa_dominujaca: true
+    silniki: [w_b, w_c]     # w_c = region+warstwa (cechy odseparowane - lekcja 54_4867)
+    przyklady: zasady/przyklady/sbm_kolorowa/
+    status: dziala          # kategoria struktura (technika B); w_c do integracji
+
+  niemiecka_blokowa:
+    opis: "Cala geometria w blokach INSERT (modelspace = same INSERTy); linetype DE (AUSGEZOGEN/MITTE/VERDECKT)"
+    wykrywanie:
+      insert_only: true
+    silniki: [w_b]
+    przyklady: zasady/przyklady/niemiecka_blokowa/
+    status: dziala          # rozbicie blokow w Geometria (wspolne.py)
+
+  lamana:
+    opis: "Kontur pozycji rozrzucony po wielu warstwach (poz. 4 SL10524825)"
+    wykrywanie: reczne
+    silniki: [w_b]
+    przyklady: zasady/przyklady/lamana/
+    status: szkic
+
+  okragle_niewyciagalne:
+    opis: "Pozycje okragle / plaszcze zwiniete / tabele wariantowe a[mm] - zwykle DO_SPRAWDZENIA/reka"
+    wykrywanie: reczne
+    silniki: []             # nie ekstrahujemy automatycznie - do czlowieka
+    przyklady: zasady/przyklady/okragle_niewyciagalne/
+    status: szkic
+
+  domyslny:
+    opis: "Typ nieokreslony - pelny przebieg kategorii z ostroznymi progami"
+    wykrywanie: fallback
+    silniki: [w_b]
+    przyklady: zasady/przyklady/domyslny/
+    status: dziala

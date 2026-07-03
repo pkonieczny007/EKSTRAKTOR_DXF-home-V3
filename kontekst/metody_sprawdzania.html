@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<!-- opis: Metody sprawdzania wyników ekstrakcji — 4 poziomy obrony i porównanie wizualne -->
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>METODY SPRAWDZANIA — weryfikator V2</title>
+<style>
+  :root{
+    --papier:#fdfcf8; --tusz:#1e1e1e; --szary:#8a8a8a;
+    --nieb:#4a7fd6; --ziel:#2f9e44; --pomar:#e8890c;
+    --fiol:#8b5cf6; --czerw:#e03131; --morski:#0ca678;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; padding:32px 40px 64px; background:var(--papier); color:var(--tusz);
+       font:15px/1.5 "Segoe UI", system-ui, sans-serif}
+  h1,h2,.karta h3,.poziom b{font-family:"Segoe Print","Comic Sans MS",cursive}
+  h1{font-size:26px; margin:0 0 4px}
+  .podtytul{color:var(--szary); margin:0 0 24px}
+  h2{font-size:20px; margin:44px 0 14px; border-bottom:2px dashed #d8d4c8; padding-bottom:6px}
+  code{background:#f1eee4; border-radius:4px; padding:1px 5px; font-size:13px}
+
+  .ramka{border:2px solid var(--tusz); border-radius:14px; background:#fff; padding:18px 22px; margin:14px 0}
+  .ramka.zasada{border-color:var(--czerw); background:#fff8f8; border-width:3px}
+  .ramka.zasada b{font-family:"Segoe Print",cursive}
+  .ramka ul{margin:8px 0 0; padding-left:22px}
+  .ramka li{margin:5px 0}
+
+  /* poziomy obrony */
+  .poziomy{display:flex; flex-wrap:wrap; gap:10px; align-items:stretch; margin:14px 0}
+  .poziom{flex:1; min-width:200px; border:2.5px solid; border-radius:12px; background:#fff; padding:12px 14px}
+  .poziom b{display:block; font-size:15px; margin-bottom:4px}
+  .poziom small{color:#555; display:block}
+  .czas{display:inline-block; margin-top:8px; font-size:12px; border-radius:20px; padding:2px 10px; font-weight:600}
+  .p1{border-color:var(--nieb)}  .p1 .czas{background:#e3edfb; color:var(--nieb)}
+  .p2{border-color:var(--ziel)}  .p2 .czas{background:#d3f2dd; color:#1d7a35}
+  .p3{border-color:var(--pomar)} .p3 .czas{background:#fdeeca; color:#9a6b00}
+  .p4{border-color:var(--szary)} .p4 .czas{background:#eee; color:#555}
+  .strzalka-poziom{align-self:center; font-size:22px; color:var(--szary)}
+
+  /* karty metod */
+  .plansza{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px}
+  .karta{border:1.5px solid #d9d5c9; border-radius:10px; padding:10px 12px; background:#fffef9}
+  .karta h3{font-size:14px; margin:0 0 4px}
+  .karta p{font-size:13px; margin:0; color:#555}
+  .status{float:right; font-size:11px; border-radius:20px; padding:1px 8px; margin-left:6px; white-space:nowrap}
+  .s-dziala{background:#d3f2dd; color:#1d7a35}
+  .s-czesc{background:#fdeeca; color:#9a6b00}
+  .s-pomysl{background:#e8e2fb; color:#6742c9}
+
+  table{border-collapse:collapse; width:100%; margin:10px 0; background:#fff}
+  th,td{border:1px solid #d9d5c9; padding:7px 12px; text-align:left; font-size:13.5px}
+  th{background:#f5f2e9; font-weight:600}
+
+  /* mockup kafelka */
+  .kafelek{border:3px solid var(--ziel); border-radius:12px; background:#fff; padding:10px;
+           width:380px; box-shadow:4px 4px 0 rgba(0,0,0,.07)}
+  .kafelek .obrazki{display:flex; gap:8px}
+  .mini{flex:1; height:120px; border-radius:6px; display:flex; align-items:center; justify-content:center;
+        font-size:11px; color:#999; text-align:center}
+  .mini.wynik{background:#111; color:#8fd19e; border:1px solid #333}
+  .mini.zrodlo{background:#f4f1e8; border:1px solid #ccc; position:relative}
+  .mini.zrodlo .ramka-widok{position:absolute; left:18%; top:22%; width:34%; height:46%;
+        border:2px solid var(--czerw); border-radius:2px}
+  .kafelek .liczby{display:flex; gap:14px; margin-top:8px; font-size:12px; color:#444; flex-wrap:wrap}
+  .kafelek .liczby b{color:#1d7a35}
+  .dwie-kol{display:grid; grid-template-columns:auto 1fr; gap:24px; align-items:start}
+  @media(max-width:900px){.dwie-kol{grid-template-columns:1fr}}
+  .mono{font-family:Consolas,monospace; font-size:13px; background:#26241f; color:#e8e4d8;
+        border-radius:10px; padding:14px 18px; overflow-x:auto; white-space:pre; line-height:1.55}
+</style>
+</head>
+<body>
+
+<h1>METODY SPRAWDZANIA — weryfikator V2</h1>
+<p class="podtytul">sprawdzanie musi być proste, szybkie i skuteczne · tablica: pomysł/doks/ekstraktorV2 · 02.07.2026</p>
+
+<div class="ramka zasada">
+  <b>ZASADY NADRZĘDNE</b>
+  <ul>
+    <li><b>Sprawdzanie &lt; rysowanie od zera.</b> Jeśli weryfikacja pozycji trwa dłużej niż narysowanie jej ręcznie — proces jest do wyrzucenia. Cel: zlecenie 20 pozycji sprawdzone w ~2 minuty.</li>
+    <li><b>Człowiek porównuje OBRAZKI, nie otwiera CAD-a.</b> Otwarcie CAD-a do sprawdzenia = porażka procesu. CAD zostaje tylko do ręcznej poprawki odrzuconych.</li>
+    <li><b>Maszyna mówi jawnie, CZEGO jest niepewna.</b> Żółty status zawsze z powodem („bbox OK, ale w widoku źródłowym były 2 okręgi, w wyniku 0"). Człowiek decyduje o jednej wątpliwości, nie szuka jej sam.</li>
+  </ul>
+</div>
+
+<h2>Cztery poziomy obrony (lejek — każdy poziom przepuszcza mniej)</h2>
+<div class="poziomy">
+  <div class="poziom p1"><b>POZIOM 1 · QC automatyczne</b><small>8 bramek liczonych z geometrii — każda pozycja, zawsze</small><span class="czas">maszyna · 0 s/poz</span></div>
+  <div class="strzalka-poziom">➜</div>
+  <div class="poziom p2"><b>POZIOM 2 · galeria kafelków</b><small>rzut oka na wynik obok źródła — wszystkie pozycje</small><span class="czas">człowiek · 2–5 s/poz</span></div>
+  <div class="strzalka-poziom">➜</div>
+  <div class="poziom p3"><b>POZIOM 3 · wyjątki</b><small>tylko żółte/czerwone: decyzja na ramkach-kandydatach</small><span class="czas">człowiek · &lt; 30 s/poz</span></div>
+  <div class="strzalka-poziom">➜</div>
+  <div class="poziom p4"><b>POZIOM 4 · Lantek</b><small>nesting jako ostatnia siatka — zły kontur nie zagnieździ się</small><span class="czas">maszyna · 0 s</span></div>
+</div>
+
+<table>
+  <tr><th>Budżet czasu (zlecenie 20 pozycji)</th><th>pozycji</th><th>czas/poz</th><th>razem</th></tr>
+  <tr><td>zielone — spojrzenie na kafelek + batch approve</td><td>~16</td><td>2–5 s</td><td>~1 min</td></tr>
+  <tr><td>żółte — decyzja w interfejsie wyjątków</td><td>~3</td><td>&lt; 30 s</td><td>~1,5 min</td></tr>
+  <tr><td>czerwone — do ręki w CAD (jedyny moment CAD-a)</td><td>~1</td><td>jak rysowanie</td><td>poza budżetem sprawdzania</td></tr>
+</table>
+
+<h2>Poziom 1 — bramki QC automatycznego (weryfikator.py, wspólny dla wszystkich metod ekstrakcji)</h2>
+<div class="plansza">
+  <div class="karta"><span class="status s-dziala">działa</span><h3>1. Wymiar bbox vs wykaz</h3><p>Abmess_1 × Abmes_2, tolerancja + dozwolone skale (NICE_SCALES)</p></div>
+  <div class="karta"><span class="status s-dziala">działa</span><h3>2. Kontur domknięty</h3><p>0 otwartych końców — laser wymaga zamkniętych konturów</p></div>
+  <div class="karta"><span class="status s-czesc">częściowo</span><h3>3. Filtr śmieci</h3><p>liczba encji ≥ 3, śr. długość LINE, % łuków — wycina „pierścień" z 230 odcinków</p></div>
+  <div class="karta"><span class="status s-pomysl">pomysł</span><h3>4. Bilans otworów</h3><p>otwory w wyniku = CIRCLE/ELLIPSE w widoku źródłowym; otwory są święte</p></div>
+  <div class="karta"><span class="status s-pomysl">pomysł</span><h3>5. Detekcja izometrii</h3><p>histogram kątów linii (piki ~30°/150°) = rzut 3D o pasującym bbox → odrzuć</p></div>
+  <div class="karta"><span class="status s-czesc">częściowo</span><h3>6. Bramka gięcia</h3><p>wykaz mówi „gięcie" ⇒ warstwa GIECIE niepusta; para P/L ⇒ gięcia odbite z konturem</p></div>
+  <div class="karta"><span class="status s-dziala">działa</span><h3>7. Rejestr widoków</h3><p>żaden widok nie użyty dwa razy (lustro nie kradnie widoku bliźniaka)</p></div>
+  <div class="karta"><span class="status s-dziala">działa</span><h3>8. Sanity 1:1</h3><p>jednostki mm, skala 1:1, środek bbox w (0,0)</p></div>
+</div>
+<div class="ramka">
+  Wynik bramek = <b>semafor</b>: <b style="color:#1d7a35">ZIELONE</b> (wszystkie bramki OK) ·
+  <b style="color:#9a6b00">ŻÓŁTE</b> (bramka niepewna — jawny powód, do człowieka) ·
+  <b style="color:#c92a2a">CZERWONE</b> (nie znaleziono / bramka twarda nie przeszła — do ręki).
+  Sufiksy plików jak dziś: <code>_DO_SPRAWDZENIA</code>, <code>_LUSTRO_z_pN</code>.
+</div>
+
+<h2>Poziom 2 — porównanie wizualne z oryginałem (serce sprawdzania)</h2>
+<div class="dwie-kol">
+  <div>
+    <div class="kafelek">
+      <div class="obrazki">
+        <div class="mini wynik">WYNIK<br>PNG, czarne tło<br>(_render_png.py)</div>
+        <div class="mini zrodlo">ŹRÓDŁO — cały rysunek<div class="ramka-widok"></div></div>
+      </div>
+      <div class="liczby">
+        <span>wymiar: <b>2232 × 640 ✓</b></span>
+        <span>otwory: <b>4/4 ✓</b></span>
+        <span>gięcia: <b>2 ✓</b></span>
+        <span>QC: <b>8/8</b></span>
+      </div>
+    </div>
+    <p style="font-size:12.5px;color:var(--szary);max-width:380px">↑ mockup kafelka: wynik obok źródła
+    z czerwoną ramką „skąd wycięto" + liczby. Zielona obwódka = semafor. Jeden rzut oka
+    odpowiada na oba pytania: <i>właściwy widok?</i> i <i>nic nie zginęło?</i></p>
+  </div>
+  <div class="plansza" style="grid-template-columns:1fr">
+    <div class="karta"><span class="status s-pomysl">pomysł · fundament</span><h3>Galeria kafelków zlecenia (HTML)</h3><p>wszystkie pozycje jako kafelki: wynik + źródło z ramką + liczby; kolor obwódki = semafor; sortowanie czerwone → żółte → zielone; klik = pełny podgląd / otwórz DXF</p></div>
+    <div class="karta"><span class="status s-dziala">działa (demo)</span><h3>3 panele: TIF | surowy DXF | wynik</h3><p><code>testy/pretesty/_demo_porownanie.py</code> — TIF to „prawda wydrukowana", niezależna od warstw i kolorów; pełny widok po kliknięciu kafelka</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł · mały krok</span><h3>Ramka „skąd wycięto" na źródle</h3><p>ekstraktor zapisuje bbox źródłowy PRZED wyśrodkowaniem do raportu CSV → ramka rysuje się na miniaturze źródła (mała zmiana w extract_positions.py — odblokowuje kafelek i overlay)</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Overlay — wynik nałożony na źródło</h3><p>rysunek źródłowy na szaro, wynik na zielono w oryginalnym miejscu; ubytek (zgubiony otwór) i nadmiar (wzięta linia wymiarowa) widać natychmiast jako różnicę kolorów</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Wycinek TIF przy wyjątkach</h3><p>przy decyzji operatora: render kandydata obok wycinka TIF tego samego obszaru — weryfikacja przeciw wydrukowi, nie przeciw interpretacji warstw</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł · opcja</span><h3>Blink-diff A/B</h3><p>szybkie przełączanie wynik/źródło w tym samym miejscu (jak w astronomii) — różnice „mrugają"; do trudnych przypadków, nie do codziennego przeglądu</p></div>
+  </div>
+</div>
+
+<h2>Ergonomia przeglądu (żeby 20 pozycji = 2 minuty)</h2>
+<div class="ramka">
+  <ul>
+    <li><b>Kolejność:</b> czerwone i żółte na górze galerii, zielone na dole — najpierw decyzje, potem kiwanie głową.</li>
+    <li><b>Batch approve:</b> „zatwierdź wszystkie zielone" jednym klikiem po przewinięciu galerii.</li>
+    <li><b>Powód żółtego wypisany na kafelku</b> — operator ocenia JEDNĄ wątpliwość, nie ogląda wszystkiego od nowa.</li>
+    <li><b>Klawiatura:</b> Enter = zatwierdź, → = następny, X = odrzuć (z listą powodów do wyboru).</li>
+    <li><b>Zero nawigacji po folderach:</b> galeria = jeden plik HTML per zlecenie, otwiera się z raportu.</li>
+  </ul>
+</div>
+
+<h2>Pętla uczenia — sprawdzanie karmi trening</h2>
+<div class="ramka">
+  <ul>
+    <li>każde odrzucenie/poprawka w galerii lub wyjątkach → wiersz w <code>korpus/decyzje.csv</code> (pozycja, kandydaci, wybór, POWÓD, cechy klastrów);</li>
+    <li>powody odrzuceń → statystyka → nowe bramki QC i progi (PLAN.md Etap 4) — <b>system z każdym zleceniem pyta rzadziej</b>;</li>
+    <li>fałszywe ZIELONE (wykryte w Lantku lub na produkcji) = najcenniejsza etykieta — natychmiast do <code>testy/regresja.py</code> jako nowy przypadek.</li>
+  </ul>
+</div>
+
+<h2>Kolejność wdrożenia w V2 (małe kroki, każdy domknięty)</h2>
+<div class="mono">1. bbox zrodlowy do CSV        <- mala zmiana, odblokowuje ramke i overlay
+2. galeria kafelkow (HTML)     <- reuzycie _render_png.py + _demo_porownanie.py
+3. weryfikator.py: bramki 3-6  <- filtr smieci, bilans otworow, izometria, giecia
+4. semafor + batch approve     <- statusy w galerii, decyzje.csv
+5. interfejs wyjatkow (Flask)  <- PLAN.md Etap 3, dopiero gdy 1-4 dzialaja</div>
+<p>Po każdym kroku: <code>python testy/regresja.py</code> musi być PASS. V1 działa przez cały czas budowy.</p>
+
+</body>
+</html>

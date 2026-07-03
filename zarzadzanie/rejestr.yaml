@@ -1,0 +1,203 @@
+# REJESTR narzedzi V3 - skille i aplikacje Python (CLAUDE.md "Zarzadzanie").
+# Kazda zmiana narzedzia = podbicie `wersja` + aktualizacja wpisu (zasada 13).
+# Audyt rejestru vs rzeczywistosc: python zarzadzanie\audyt.py
+#
+# Pola:
+#   typ         skill | aplikacja
+#   wersja      podbijac przy kazdej zmianie
+#   status      dziala | szkielet | plan | archiwum
+#   opis        jedno zdanie
+#   plik        (aplikacja) sciezka wzgledem korzenia V3
+#   instalacje  (skill) gdzie ma byc zainstalowany
+#   test        komenda weryfikujaca (pusta = brak testu - audyt to zglosi)
+
+narzedzia:
+
+  # ---------- SKILLE ----------
+  - nazwa: wyciagnij-dxf
+    typ: skill
+    wersja: "2.0"
+    status: dziala
+    opis: "Produkcja: pelny pipeline ekstrakcji na zleceniu (recall wiedzy -> ekstrakcja -> raport); dziala na silnikach V1/V2, do podmiany na orkiestrator V3 (PLAN etap 5)"
+    instalacje:
+      - "~/.claude/skills/wyciagnij-dxf"
+      - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\wyciagnij-dxf.md"
+    test: "python testy\\regresja.py"
+
+  - nazwa: dxf-testy
+    typ: skill
+    wersja: "0"
+    status: plan
+    opis: "Regresja + znane bledy + benchmark jedna komenda, raport do testy/raporty/ (PLAN etap 5)"
+    instalacje: []
+    test: ""
+
+  - nazwa: dxf-sprawdz
+    typ: skill
+    wersja: "0"
+    status: plan
+    opis: "Sprawdzanie AI folderu wynikow: nakladki, ogledziny 100% flag, czerwone zakreslenia, werdykty (PLAN etap 4)"
+    instalacje: []
+    test: ""
+
+  - nazwa: dxf-przeglad
+    typ: skill
+    wersja: "0"
+    status: plan
+    opis: "Sesja przegladu czlowieka: galeria -> werdykty -> etykiety -> golden (PLAN etap 4)"
+    instalacje: []
+    test: ""
+
+  - nazwa: dxf-zasada
+    typ: skill
+    wersja: "0"
+    status: plan
+    opis: "Obserwacja/przypadek -> propozycja reguly w formacie zasady/propozycje/ (PLAN etap 5)"
+    instalacje: []
+    test: ""
+
+  - nazwa: dxf-nauka
+    typ: skill
+    wersja: "0"
+    status: plan
+    opis: "Destylacja korpus+etykiety -> wnioski -> (za akceptacja) kontekst/wiedza/ (PLAN etap 5)"
+    instalacje: []
+    test: ""
+
+  - nazwa: dxf-audyt
+    typ: skill
+    wersja: "0"
+    status: plan
+    opis: "Audyt tego rejestru (opakowanie zarzadzanie/audyt.py) (PLAN etap 6)"
+    instalacje: []
+    test: ""
+
+  # ---------- APLIKACJE: SILNIKI ----------
+  - nazwa: silnik-w-a
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "V1: klastrowanie + ranking widokow + zapis 1:1 (regresja 43/43 w V3)"
+    plik: produkcja/silniki/extract_positions.py
+    test: "python testy\\regresja.py"
+
+  - nazwa: silnik-w-b
+    typ: aplikacja
+    wersja: "2.0"
+    status: dziala
+    opis: "V2: orkiestrator -> kategorie (wtyczki YAML) -> weryfikator 8 bramek -> galeria (testy_v2 35/35, benchmark PASS w V3)"
+    plik: produkcja/silniki/v2/orkiestrator.py
+    test: "python testy\\testy_v2.py"
+
+  - nazwa: silnik-w-c
+    typ: aplikacja
+    wersja: "0.9"
+    status: dziala
+    opis: "region+warstwa: wszystkie encje warstwy geometrii w bbox widoku; NARZEDZIE CLI sprawdzone na 54_4867 (8 pozycji); integracja jako silnik wariantow = PLAN etap 2"
+    plik: produkcja/silniki/region_warstwa.py
+    test: ""
+
+  - nazwa: konwersja-dwg
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "DWG->DXF przez GstarCAD wsadowo (UNC nie dziala -> %TEMP%; retry na bledy przejsciowe)"
+    plik: produkcja/silniki/convert_dwg.py
+    test: ""
+
+  # ---------- APLIKACJE: PIPELINE V3 ----------
+  - nazwa: orkiestrator-v3
+    typ: aplikacja
+    wersja: "0.1"
+    status: dziala
+    opis: "Wejscie V3: typowanie (informacyjne) + delegacja 1:1 do W-B (etap 1 parytet); warianty+ocena = etap 3"
+    plik: produkcja/orkiestrator.py
+    test: "python testy\\testy_v2.py"
+
+  - nazwa: typowanie
+    typ: aplikacja
+    wersja: "0.1"
+    status: dziala
+    opis: "Heurystyki typu rysunku z config/typy.yaml (lantek_1nn / sbm_kolorowa / niemiecka_blokowa); kalibracja = etap 4"
+    plik: produkcja/typowanie.py
+    test: ""
+
+  - nazwa: ocena-wariantow
+    typ: aplikacja
+    wersja: "0.1"
+    status: dziala
+    opis: "Sygnatura geometryczna + porownanie wariantow (bramka 10); CLI dziala, wpiecie w pipeline = etap 3"
+    plik: produkcja/ocena.py
+    test: ""
+
+  - nazwa: raport-zlecenia
+    typ: aplikacja
+    wersja: "0.1"
+    status: dziala
+    opis: "Podsumowanie semaforow z *_raport.csv; zapis do wykazu = etap 3-4"
+    plik: produkcja/raport.py
+    test: ""
+
+  - nazwa: bramki
+    typ: aplikacja
+    wersja: "0.1"
+    status: dziala
+    opis: "Rejestr 10 bramek + delegacja kontroli post-hoc do weryfikatora W-B"
+    plik: produkcja/kontrola/bramki.py
+    test: "python produkcja\\kontrola\\bramki.py --lista"
+
+  - nazwa: licznik-konturow
+    typ: aplikacja
+    wersja: "0.9"
+    status: dziala
+    opis: "FLAGER konturow wewnetrznych (cyklomatyka E-V+C); szum: off-by-one na lustrach -> docelowo shapely.polygonize (etap 2); flaga != bramka!"
+    plik: produkcja/kontrola/licznik_konturow.py
+    test: ""
+
+  - nazwa: sweep-kompletnosci
+    typ: aplikacja
+    wersja: "0"
+    status: szkielet
+    opis: "Obowiazkowe domkniecie zlecenia (zasada 7); implementacja = etap 2"
+    plik: produkcja/kontrola/sweep.py
+    test: ""
+
+  - nazwa: nakladka
+    typ: aplikacja
+    wersja: "0"
+    status: szkielet
+    opis: "Nakladka wynik-na-zrodlo (strategia #1 kompletnosci); implementacja = etap 2"
+    plik: sprawdzanie/ai/nakladka.py
+    test: ""
+
+  - nazwa: werdykty
+    typ: aplikacja
+    wersja: "0.1"
+    status: dziala
+    opis: "Zbieranie etykiet przegladu (czlowiek/AI) do nauka/etykiety/etykiety.csv"
+    plik: sprawdzanie/czlowiek/werdykty.py
+    test: "python sprawdzanie\\czlowiek\\werdykty.py --podsumowanie"
+
+  - nazwa: galeria
+    typ: aplikacja
+    wersja: "2.0"
+    status: dziala
+    opis: "Kafelki wynik-obok-zrodla z ramka 'skad wycieto' + semafor (z V2)"
+    plik: produkcja/silniki/v2/galeria.py
+    test: ""
+
+  - nazwa: destylacja
+    typ: aplikacja
+    wersja: "0.1"
+    status: dziala
+    opis: "Korpus+etykiety -> szkic wnioskow (agregacja, zero LLM); awans regul zawsze przez czlowieka"
+    plik: nauka/destylacja.py
+    test: "python nauka\\destylacja.py"
+
+  - nazwa: audyt
+    typ: aplikacja
+    wersja: "0.1"
+    status: dziala
+    opis: "Audyt tego rejestru vs rzeczywistosc (pliki, instalacje skilli, testy zdefiniowane)"
+    plik: zarzadzanie/audyt.py
+    test: "python zarzadzanie\\audyt.py"

@@ -1,0 +1,46 @@
+# Rejestr kategorii szukania (lista OTWARTA) - przeniesiony z V2 do V3.
+# Dodanie kategorii = nowy plik w produkcja/silniki/v2/kategorie/ + wpis tutaj.
+# Silnika i orkiestratora NIE dotykamy - orkiestrator nie zna srodka kategorii.
+#
+# Pola wpisu:
+#   modul      - nazwa pliku w produkcja/silniki/v2/kategorie/ (bez .py)
+#   nazwa      - etykieta do raportu
+#   kolejnosc  - porzadek odpalania (orkiestrator i tak porownuje wszystkich kandydatow)
+#   wlaczona   - false = kategoria pominieta (mozna rozniacowac per profil klienta)
+#   ustawienia - progi przekazywane do znajdz(...) jako profil
+
+kategorie:
+  - modul: struktura
+    nazwa: "1. po strukturze rysunku"     # warstwy 1NN / kolory SBM / bloki INSERT
+    kolejnosc: 1
+    wlaczona: true
+
+  - modul: wymiary
+    nazwa: "2. po wymiarach z wykazu"     # bbox wprost 1:1 / bbox ze skala
+    kolejnosc: 2
+    wlaczona: true
+    ustawienia:
+      gapy: [8.0, 4.0, 2.0]               # progi klastrowania (widoki bywaja blisko)
+
+  - modul: geometria
+    nazwa: "3. po cechach geometrii"      # czysty wycinalny widok (ratunkowa)
+    kolejnosc: 3
+    wlaczona: true
+    ustawienia:
+      luzna_tolerancja: 0.045             # 1.5 x SCALE_TOL; kandydaci TYLKO niepewni
+
+  # --- kolejne sesje (architektura docelowa) ---
+  - modul: adnotacje
+    nazwa: "4. po adnotacjach tekstowych" # gespiegelt/mirrored, nr pozycji w dymku
+    kolejnosc: 4
+    wlaczona: false
+
+  - modul: korpus
+    nazwa: "5. po archiwum / korpusie"    # baza elementow, sygnatura geometryczna
+    kolejnosc: 5
+    wlaczona: false
+
+  - modul: czlowiek
+    nazwa: "6. pomoc czlowieka"           # kolejka do decyzji operatora -> korpus
+    kolejnosc: 6
+    wlaczona: false

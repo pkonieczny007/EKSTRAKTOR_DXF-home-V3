@@ -1,0 +1,21 @@
+# wyjscia robocze i cache
+wyniki/
+__pycache__/
+*.pyc
+*.pyo
+
+# korpus surowych zdarzen jest poza gitem - wersjonuje sie DESTYLAT w kontekst/wiedza/
+nauka/korpus/*.csv
+nauka/etykiety/*.csv
+
+# srodowisko / edytory
+.venv/
+venv/
+.idea/
+.vscode/
+
+# duze artefakty tymczasowe
+*.zip
+*.bak
+~$*.xlsx
+~$*.xlsm

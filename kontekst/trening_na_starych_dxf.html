@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Pomysły: „trening" na starych DXF — korpus, walidacja, samodoskonalenie</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 1100px; margin: 24px auto; padding: 0 20px; background: #1e2227; color: #d8dee6; line-height: 1.55; }
+  h1 { color: #6fc3ff; border-bottom: 2px solid #3a4250; padding-bottom: 8px; }
+  h2 { color: #ffd166; margin-top: 36px; }
+  h3 { color: #9be07a; }
+  .card { background: #262c34; border: 1px solid #3a4250; border-radius: 10px; padding: 16px 20px; margin: 14px 0; }
+  .prio { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; margin-left: 8px; vertical-align: middle; }
+  .p1 { background: #2e7d32; color: #fff; }
+  .p2 { background: #f9a825; color: #222; }
+  .p3 { background: #546e7a; color: #fff; }
+  code, pre { background: #14181d; border-radius: 6px; color: #9be07a; padding: 2px 6px; font-size: 0.92em; }
+  pre { padding: 12px 16px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { border: 1px solid #3a4250; padding: 8px 12px; text-align: left; }
+  th { background: #2c333d; color: #ffd166; }
+  .llm { color: #c792ea; font-weight: 600; }
+  .py { color: #9be07a; font-weight: 600; }
+  .warn { background: #4a3520; border-left: 4px solid #f9a825; padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+  .ok { background: #1f3a26; border-left: 4px solid #2e7d32; padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+</style>
+</head>
+<body>
+
+<h1>„Trening" na starych przykładach DXF</h1>
+<p><b>Data:</b> 11.06.2026 &nbsp;|&nbsp; <b>Kontekst:</b> ekstraktor pozycji blaszanych
+(<code>analiza\testy\wyniki\extract_positions.py</code>) działa na 2 rysunkach testowych (17/18 automatycznie).
+Mamy archiwum: stare rysunki źródłowe (DWG/DXF), wykazy materiałowe i — co najcenniejsze —
+<b>gotowe DXF-y wycięte na laserze</b> (baza Lantek / elementy1.xlsx).</p>
+
+<div class="ok">
+<b>Zasada przewodnia (zgodnie z życzeniem):</b> jak najwięcej <span class="py">czystego Pythona</span>
+(deterministyczne, tanie, powtarzalne), <span class="llm">LLM (Opus)</span> tylko tam, gdzie trzeba
+„spojrzeć i ocenić": notatki na rysunkach, niejednoznaczne przypadki, propozycje nowych reguł.
+To nie jest trening sieci neuronowej — to <b>budowa korpusu wzorcowego + statystyka + regresja</b>.
+</div>
+
+<h2>1. Złoty korpus (golden corpus) — fundament wszystkiego <span class="prio p1">PRIORYTET 1</span></h2>
+<div class="card">
+<p><b>Pomysł:</b> sparować stare dane w trójki i traktować jak „odpowiedzi z klucza":</p>
+<pre>(rysunek źródłowy DWG/DXF) + (wykaz.xlsx) + (finalny DXF wycięty na laserze)
+                 │                  │                    │
+              wejście           prawda o wymiarach    PRAWDA o konturze</pre>
+<p><b>Jak parować automatycznie (<span class="py">Python</span>):</b> nazwa finalnego DXF zawiera zwykle
+Zeinr+pozycję (np. <code>SL10478356_p1</code> / konwencje z bazy elementy1.xlsx); reszta przez
+dopasowanie wymiarów bbox do Abmess_1×Abmes_2 z wykazu.</p>
+<p><b>Co daje:</b> automatyczna miara jakości ekstraktora. Skrypt przepuszcza stare rysunki przez
+ekstraktor i porównuje wynik z finalnym DXF <b>sygnaturą geometryczną</b>
+(jak <code>_dev\_compare_p1.py</code>: normalizacja do (0,0) + zbiór encji zaokrąglonych do 0.1 mm —
+porównanie odporne na przesunięcie i kolejność):</p>
+<pre>python zbuduj_korpus.py \\stare_zlecenia\  →  korpus.csv (trojki + status parowania)
+python benchmark.py korpus.csv             →  raport: % identycznych, % wymiar OK,
+                                              % zgubionych otworów, lista porażek</pre>
+<p><b>Rola <span class="llm">LLM</span>:</b> żadna w pętli — tylko przegląd raportu porażek raz na iterację.</p>
+</div>
+
+<h2>2. Bank trudnych przypadków = testy regresyjne <span class="prio p1">PRIORYTET 1</span></h2>
+<div class="card">
+<p>Każda porażka z benchmarku trafia do <code>tests/fixtures/przypadek_NNN/</code>
+(rysunek + wykaz-wycinek + oczekiwany DXF + notatka „czemu trudny"). Po każdej zmianie ekstraktora
+odpalamy <code>pytest</code> — żadna poprawka nie może zepsuć wcześniej działających przypadków
+(dokładnie tak złapaliśmy regresję poz. 12/13 przy pracach nad rankingiem widoków).</p>
+<p>To jest realny odpowiednik „treningu": <b>korpus rośnie → reguły się doskonalą → wynik mierzalny</b>.</p>
+</div>
+
+<h2>3. Auto-strojenie progów na korpusie <span class="prio p2">PRIORYTET 2</span></h2>
+<div class="card">
+<p>Ekstraktor ma magiczne liczby: <code>CLUSTER_GAP=8</code>, <code>FALLBACK_GAPS=(8,4,2)</code>,
+<code>SCALE_TOL=3%</code>, lista „ładnych" skal. Zamiast zgadywać — <span class="py">grid search</span>
+po korpusie: dla każdej kombinacji progów policz % sukcesów, wybierz optimum (i sprawdź czy nie
+przeucza się na jednym kliencie).</p>
+<pre>for gap in (4,6,8,10,12):
+  for tol in (0.01,0.02,0.03,0.05):
+     wynik[gap,tol] = benchmark(korpus, gap, tol)</pre>
+<p>Czysty Python, godzina liczenia w nocy. <span class="llm">LLM</span>: zero.</p>
+</div>
+
+<h2>4. Eksploracja konwencji rysunkowych (statystyka korpusu) <span class="prio p2">PRIORYTET 2</span></h2>
+<div class="card">
+<p>Skrypt skanuje wszystkie stare rysunki i zlicza: schematy warstw (ile rysunków ma 1NN? jakie inne?),
+linetypes linii gięcia (zawsze DASHDOT? bywa DASHED?), kolory konturów, rozkład skal, notatki tekstowe
+(<i>gespiegelt / mirrored / wie dargestellt / Abwicklung</i>...). Wynik: <code>konwencje.csv</code> + HTML.</p>
+<p><b>Rola <span class="llm">LLM</span>:</b> przejrzeć tabelę konwencji raz i zaproponować reguły/profile
+per klient (np. „rysunki SEW-*: pozycje na warstwach numerycznych bez prefiksu 1").
+Profile lądują w YAML — dalej działa sam Python.</p>
+</div>
+
+<h2>5. Lekki klasyfikator wyboru widoku (jedyne prawdziwe „uczenie") <span class="prio p3">PRIORYTET 3</span></h2>
+<div class="card">
+<p>Dziś ranking widoków to ręcznie ułożona krotka (ładna skala, otwarte końce, liczba encji, błąd proporcji).
+Z korpusu można wyciągnąć <b>etykiety automatycznie</b>: który klaster odpowiada finalnemu DXF → to jest
+„dobry widok", reszta „złe". Na cechach (open_ends, n_encji, rel_err, % łuków, czy_skala_ładna,
+odległość od ramki, ...) trenujemy <span class="py">drzewo decyzyjne (sklearn)</span> — wciąż w pełni
+wyjaśnialne, można je z powrotem przepisać na reguły YAML.</p>
+<div class="warn">Robić DOPIERO gdy ręczny ranking zacznie przegrywać na korpusie — na 2 rysunkach
+testowych ma 100%, więc najpierw punkt 1-2, żeby było na czym mierzyć.</div>
+</div>
+
+<h2>6. Weryfikacja wizualna TIF / render (pomysł operatora) <span class="prio p2">PRIORYTET 2</span></h2>
+<div class="card">
+<p>Do każdego rysunku istnieje TIF. Raport HTML pokazuje obok siebie: render wyciętego DXF + wycinek TIF
+z obszaru, skąd pochodzi widok (znamy bbox na papierze). Dodatkowo <span class="py">diff pikselowy</span>
+(overlay, np. czerwone = tylko TIF, zielone = tylko DXF) jako pre-filtr: duża różnica → do przejrzenia.</p>
+<p><b>Rola <span class="llm">LLM</span> (opcjonalnie):</b> Opus umie czytać obrazy — może automatycznie
+ocenić pary „render vs TIF" i opisać różnicę słowami („w TIF jest otwór, którego brak w DXF").
+To naturalne miejsce na „lekką pomoc Opus": <b>Python odsiewa 95% oczywistych, LLM ogląda tylko wątpliwe</b>.</p>
+</div>
+
+<h2>7. Tryb półautomatyczny „kwadraty do zatwierdzenia" (pomysł operatora) <span class="prio p2">PRIORYTET 2</span></h2>
+<div class="card">
+<p>Dla rysunków łamiących wszystkie konwencje: skrypt rysuje prostokąty-kandydatów na podglądzie
+(etykieta: poz., skala, wymiar), człowiek zatwierdza/przesuwa w prostym HTML (klik = toggle), skrypt
+wycina z zatwierdzonych ramek. Człowiek <b>zatwierdza, nie szuka</b>. Zatwierdzenia trafiają do korpusu
+(punkt 1) — każda ręczna decyzja czyni automat mądrzejszym.</p>
+</div>
+
+<h2>Podział ról — podsumowanie</h2>
+<table>
+<tr><th>Zadanie</th><th>Kto</th><th>Kiedy</th></tr>
+<tr><td>Parowanie korpusu, benchmark, sygnatury geometryczne</td><td class="py">Python</td><td>zawsze, wsadowo</td></tr>
+<tr><td>Strojenie progów, statystyka konwencji, testy regresyjne</td><td class="py">Python</td><td>nocne przebiegi</td></tr>
+<tr><td>Czytanie notatek rysunkowych (gespiegelt, kąty gięcia)</td><td class="llm">Opus</td><td>tylko pozycje nie-OK</td></tr>
+<tr><td>Ocena par render-vs-TIF, opis różnic słowami</td><td class="llm">Opus</td><td>tylko wątpliwe po diff pikselowym</td></tr>
+<tr><td>Propozycje nowych reguł z tabel konwencji</td><td class="llm">Opus</td><td>raz na iterację korpusu</td></tr>
+<tr><td>Zatwierdzanie kwadratów, przypadki beznadziejne</td><td>Człowiek</td><td>kilka % pozycji</td></tr>
+</table>
+
+<h2>Proponowana kolejność wdrożenia</h2>
+<ol>
+<li><b>Tydzień 1:</b> <code>zbuduj_korpus.py</code> + <code>benchmark.py</code> na jednym starym zleceniu (~100 pozycji). Od razu wiadomo, jaki naprawdę jest % sukcesu ekstraktora.</li>
+<li><b>Tydzień 2:</b> bank porażek → fixtures pytest; poprawki ekstraktora pod benchmark; auto-strojenie progów.</li>
+<li><b>Dalej:</b> statystyka konwencji + profile klientów; TIF-diff; tryb kwadratów dla resztek; ewentualnie drzewo decyzyjne.</li>
+</ol>
+
+<div class="ok"><b>Najważniejsza myśl:</b> finalne DXF-y z Lantka to darmowe, już istniejące „etykiety treningowe".
+Nie trzeba nic ręcznie oznaczać — wystarczy sparować archiwum i mierzyć. Każde stare zlecenie to ~200-500
+gotowych testów.</div>
+
+<p style="color:#7a8494; margin-top:32px; font-size:0.85em">Wygenerowano podczas sesji testowej ekstraktora, 11.06.2026.
+Powiązane pliki: <code>analiza\testy\wyniki\SKILL_szkic_wyciagnij-dxf.md</code>, <code>extract_positions.py</code>, <code>convert_dwg.py</code>.</p>
+
+</body>
+</html>

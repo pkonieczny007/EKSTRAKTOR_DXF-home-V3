@@ -1,0 +1,12 @@
+# V3 - etap 1 (aktualne; Python 3.13)
+ezdxf>=1.4.0          # DXF: czytanie/pisanie, bbox, transformacje, render
+openpyxl>=3.1.0       # wykaz.xlsx
+matplotlib>=3.7.0     # podglady PNG (backend ezdxf.addons.drawing; ZAWSZE czarne tlo)
+pyyaml>=6.0           # config/*.yaml + zarzadzanie/rejestr.yaml
+
+# Etap 2 (bramka 5 + sweep kompletnosci - PLAN.md)
+# shapely>=2.0        # polygonize: kontury wewnetrzne bez off-by-one sklejania
+
+# Etap 4+ (interfejs przegladu czlowieka)
+# flask>=3.0          # web UI galerii/werdyktow
+# pillow>=10.0        # wycinki TIF do porownan

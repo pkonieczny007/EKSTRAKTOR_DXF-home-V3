@@ -1,0 +1,34 @@
+# Wielowariantowosc V3 (CLAUDE.md "Wielowariantowosc - kilka wersji pliku i ich ocena").
+# Kazda pozycja moze byc wygenerowana przez 2-3 NIEZALEZNE silniki; wszystkie warianty
+# przechodza te same bramki; zgodnosc >=2 metod = wysoka pewnosc (bramka 10).
+#
+# ETAP 1 (teraz): tylko w_b (parytet z V2) - orkiestrator V3 deleguje 1:1.
+# ETAP 3 (PLAN.md): wlaczenie w_a + w_c, ocena.py wybiera zwyciezce, przegrane
+#                   warianty zostaja w wyniki/<zlecenie>/warianty/ (material do nauki).
+
+silniki:
+  w_a:
+    modul: produkcja/silniki/extract_positions.py
+    opis: "V1: klastrowanie union-find + ranking widokow + zapis 1:1"
+    status: dziala           # regresja 43/43 w V3
+  w_b:
+    modul: produkcja/silniki/v2/orkiestrator.py
+    opis: "V2: orkiestrator -> kategorie szukania (wtyczki) -> weryfikator 8 bramek"
+    status: dziala           # testy_v2 35/35 w V3
+  w_c:
+    modul: produkcja/silniki/region_warstwa.py
+    opis: "region+warstwa: WSZYSTKIE encje warstwy geometrii w bbox widoku (cechy odseparowane nie wypadaja) - sprawdzony recznie na 54_4867 (8 pozycji)"
+    status: narzedzie        # dziala jako narzedzie CLI; integracja jako silnik = PLAN etap 2
+
+# Ktore silniki per typ definiuje config/typy.yaml (pole `silniki`).
+# Ponizej ustawienia wspolne oceny wariantow (produkcja/ocena.py):
+zgodnosc:
+  tolerancja_wymiaru_mm: 1.0      # |wymiar_A - wymiar_B| <= tol -> wymiary zgodne
+  tolerancja_wymiaru_proc: 0.2    # ALBO 0.2% wymiaru (wieksza z dwoch)
+  porownuj: [wymiary, liczba_okregow, liczba_konturow_wewn, liczba_encji]
+  min_zgodnych_dla_zielonego: 2   # >=2 niezalezne silniki zgodne -> kandydat na ZIELONY
+  rozbieznosc: eskalacja          # rozbiezne warianty NIGDY nie wybieraja sie same -> czlowiek
+
+nazewnictwo:
+  wariant_suffix: "__w{silnik}"   # {Zeinr}_p{N}__wA.dxf itd. w wyniki/<zlecenie>/warianty/
+  zwyciezca: nazwa_produkcyjna    # kolumna NAZWA wykazu roboczego (bez suffixu wariantu)

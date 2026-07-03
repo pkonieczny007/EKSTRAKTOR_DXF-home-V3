@@ -1,0 +1,12 @@
+# higiena tokenow (CLAUDE.md V1 "Higiena repo"): nie przeszukuj smieci
+wyniki/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# duze pliki danych - czytac punktowo, nie grep-owac
+testy/rysunki/*.dxf
+testy/rysunki/*.xlsx
+excalidraw/*.excalidraw
+*.zip

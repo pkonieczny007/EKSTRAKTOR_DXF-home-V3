@@ -9,27 +9,59 @@
 > Narzędzie opiera się na **lokalnych skillach i skryptach Python — AI ich używa,
 > nie zastępuje**. Cel: V3 > V2 > V1 (mierzalnie, benchmarkiem).
 
-## Stan (03.07.2026) — FAZA PROJEKTOWA
+## Stan (04.07.2026) — SZKIELET ZBUDOWANY, PARYTET Z V2 ZWERYFIKOWANY
 
-Repo V3 zawiera na razie tablice projektowe i kontekst; struktura niżej = **docelowa**.
-Działające poprzedniki (NIETYKALNE, patrz zasady żelazne):
-- **V1** `c:\Python_CLaude\EKSTRAKTOR_DXF-home` — prototyp CLI + skill `/wyciagnij-dxf`, ~19/20 pozycji auto.
-- **V2** `c:\Python_CLaude\EKSTRAKTOR_DXF-home-V2` — orkiestrator → kategorie szukania (wtyczki) →
-  weryfikator 8 bramek → galeria; benchmark V2 ≥ V1 (42/42, 36/36 plików encja-po-encji);
-  start pętli samodoskonalenia (`--korpus` → `decyzje.csv`, `szkolenia/`).
+Struktura z tego pliku istnieje i działa: silniki przeniesione z V2 (kopie — tam nie
+piszemy), **regresja 43/43 PASS, testy_v2 35/35 PASS, benchmark V2≥V1 PASS — w V3**;
+orkiestrator V3 (typowanie + delegacja do W-B) przeszedł smoke-test end-to-end.
+Etapy i kryteria: `PLAN.md` (etap 0 ✅, etap 1 ✅/do obserwacji, etapy 2–6 ⬜).
+Poprzedniki (NIETYKALNE, zasada 9):
+- **V1** `C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home` — prototyp CLI + skill `/wyciagnij-dxf`.
+- **V2** `C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home-V2` — orkiestrator + kategorie + weryfikator.
 
 **Nowa sesja czyta w kolejności:**
-1. Ten plik (zasady + architektura).
-2. `excalidraw/kontekst_deploy/CLAUDEv1.md` — wiedza dziedzinowa (konwencje klientów, pułapki 1–8).
+1. Ten plik (zasady + architektura), potem `PLAN.md` (na którym etapie jesteśmy).
+2. `kontekst/CLAUDE_v1.md` — wiedza dziedzinowa (konwencje klientów, pułapki 1–8).
 3. `excalidraw/kontekst_deploy/CLAUDEv2.md` — architektura V2, pułapki wdrożenia, samodoskonalenie.
-4. `excalidraw/kontekst_deploy/kategorie_szukania_v2.html` — kategorie szukania: stan i interfejs wtyczek.
-5. Lekcje ze zlecenia 54_4867 (V2: `zlecenia\54_4867_RYSOWANIE\`): `STAN_I_KONTYNUACJA.md`,
-   `UWAGI\strategia_kompletnosc_otworow.md` (7 warstw obrony), `poprawki_region_warstwa\RAPORT_POPRAWEK.md`.
-6. Tablice: `excalidraw/OPIS_PROJEKTU_v3.excalidraw` (całość V3), `excalidraw/OPIS_system_produkcyjny.excalidraw` (pipeline produkcyjny).
-7. `PLAN.md` — etapy wdrożenia *(powstanie jako następny krok)*.
+4. `kontekst/kategorie_szukania.html` — kategorie szukania: stan i interfejs wtyczek.
+5. Lekcje 54_4867: `kontekst/lekcje_54_4867_stan.md`, `kontekst/strategia_kompletnosc_otworow.md`
+   (7 warstw obrony), `kontekst/lekcje_54_4867_raport_poprawek.md`.
+6. `kontekst/wiedza/MEMORY.md` — indeks notatek z realnych zleceń (recall przed ekstrakcją!).
+7. Tablice: `excalidraw/OPIS_PROJEKTU_v3.excalidraw`, `excalidraw/OPIS_system_produkcyjny.excalidraw`.
 
-**Roadmap:** tablica ✅ → prompt ✅ → CLAUDE.md (ten plik) ✅ → PLAN.md → szkielet
-systemów → działająca V3 (benchmark ≥ V2) → udoskonalanie przez testy i naukę.
+**Roadmap:** tablica ✅ → prompt ✅ → CLAUDE.md ✅ → PLAN.md ✅ → szkielet systemów ✅
+→ działająca V3 (parytet ✅ → etapy 2–3: kompletność + warianty) → udoskonalanie przez testy i naukę.
+
+## Szybki start
+
+```bash
+# audyt narzedzi (kazda sesja zaczyna od tego)
+python zarzadzanie\audyt.py
+
+# REGRESJA + TESTY — PO KAZDEJ zmianie w produkcja/ (PASS = warunek oddania!)
+python testy\regresja.py
+python testy\testy_v2.py
+python testy\benchmark_v2.py          # V2 >= V1 encja-po-encji (36 plikow)
+python testy\regresja_znane_bledy.py  # XFAIL cele silnika; [XPASS] -> awansuj do regresji
+
+# EKSTRAKCJA V3 (etap 1: typowanie + delegacja do W-B; argumenty jak W-B)
+python produkcja\orkiestrator.py <rysunek_conv.dxf> <wykaz.xlsx> <folder_wynikow> [--galeria] [--korpus]
+
+# narzedzia pipeline
+python produkcja\typowanie.py <rysunek_conv.dxf>          # typ rysunku (baza: config/typy.yaml)
+python produkcja\kontrola\bramki.py --lista                # rejestr 10 bramek
+python produkcja\kontrola\bramki.py <plik.dxf> <dmax> <dmin>   # kontrola post-hoc (8 bramek W-B)
+python produkcja\ocena.py <A.dxf> <B.dxf>                  # zgodnosc wariantow (bramka 10, CLI)
+python produkcja\raport.py <folder_wynikow>                # podsumowanie semaforow
+python produkcja\silniki\v2\galeria.py <folder_wynikow> [--rysunki <folder>]  # kafelki
+
+# sprawdzanie + nauka
+python sprawdzanie\czlowiek\werdykty.py <plik> OK|BLAD [kategoria] [--kto ai|czlowiek]
+python nauka\destylacja.py                                 # korpus+etykiety -> szkic wnioskow
+
+# render PNG — ZAWSZE przez ten skrypt (czarne tlo!)
+python testy\pretesty\_render_png.py "<folder>/*.dxf"
+```
 
 ## Problemy V1/V2 → root-fixy V3
 
@@ -96,53 +128,61 @@ Największy dotąd test bojowy V2 — źródło większości root-fixów V3:
     pipeline przyjmuje gotowe `_conv.dxf`; AI nie pali czasu na to, co człowiek robi
     szybciej. Pominięte/nieudane pliki logować GŁOŚNO (nigdy cicho — WinError 32!).
 
-## Struktura projektu (docelowa)
+## Struktura projektu (zbudowana 04.07.2026; [etap N] = do zrobienia wg PLAN.md)
 
 ```
 EKSTRAKTOR_DXF-home-V3/
 ├── CLAUDE.md                  ← ten plik: routing + zasady (jedyne źródło zasad)
-├── PLAN.md                    [plan] etapy wdrożenia
-├── requirements.txt           [plan] ezdxf, openpyxl, matplotlib, shapely, pyyaml
-├── excalidraw/                ← tablice projektowe + kontekst_deploy/ (CLAUDE v1/v2)
-├── kontekst/                  [plan] wiedza przeniesiona z V1/V2 + wiedza/*.md z realnych zleceń
-├── config/                    [plan]
-│   ├── typy.yaml              ← baza typów rysunków + profile klientów (progi, konwencje)
-│   ├── kategorie.yaml         ← rejestr kategorii szukania (kolejność, włączona, progi)
-│   └── warianty.yaml          ← które silniki generują warianty per typ rysunku
-├── produkcja/                 [plan] SYSTEM PRODUKCYJNY (stabilny, wersjonowany)
-│   ├── orkiestrator.py        ← typ → szukanie → warianty → kontrola → ocena → wynik
-│   ├── typowanie.py           ← określenie typu rysunku z bazy typów (może być >1 typu)
-│   ├── silniki/               ← W-A (V1: klaster+ranking), W-B (V2: kategorie+weryfikator),
-│   │                            W-C (region+warstwa — sprawdzony ręcznie: `_region_warstwa.py` z 54_4867)
-│   ├── kategorie/             ← wtyczki szukania 1–6, interfejs znajdz(geo, wiersz, profil)
-│   ├── kontrola/              ← bramki 1–10 + nakładka wynik-na-źródło + sweep.py
-│   │                            (sweep kompletności = obowiązkowe domknięcie zlecenia)
-│   ├── ocena.py               ← scoring wariantów + zgodność między wariantami + kategoria trudności
-│   └── raport.py              ← raport kontroli, zapis statusów w wykazie, galeria kafelków
-├── sprawdzanie/               [plan] SYSTEM SPRAWDZANIA (dwie warstwy)
-│   ├── ai/                    ← nakładki PNG, zakreślanie różnic na czerwono, werdykt+powód
-│   └── czlowiek/              ← galeria przeglądu, zbieranie werdyktów → etykiety
-├── testy/                     [plan] SYSTEM TESTOWY — jedyna brama do produkcji
-│   ├── golden/                ← pary: rysunek+wykaz → zweryfikowany poprawny DXF
-│   ├── regresja.py            ← pełny pipeline na golden, porównanie geometryczne
-│   ├── znane_bledy.py         ← XFAIL; [XPASS] = naprawione → awans do regresji
-│   ├── benchmark.py           ← V3 vs V2 vs V1 (statusy, wymiary, otwory, encja-po-encji)
-│   └── raporty/               ← wyniki testów per wersja zasad
-├── zasady/                    [plan] SYSTEM TWORZENIA ZASAD
-│   ├── reguly/                ← aktywne reguły per typ rysunku (md/yaml, czytelne)
-│   ├── propozycje/            ← nowe zasady CZEKAJĄCE na testy (nie działają w produkcji)
-│   └── przyklady/             ← rysunki referencyjne definiujące typy
-├── nauka/                     [plan] SYSTEM NAUKI
-│   ├── korpus/                ← decyzje.csv — surowe zdarzenia uczące (logger, zero LLM)
-│   ├── etykiety/              ← werdykty człowieka i AI (OK / błąd + kategoria) — CSV, docelowo SQLite
-│   ├── szkolenia/             ← MANUAL UPGRADER: ręcznie wrzucone zlecenia z kolumnami SZKOLENIE+OPIS
-│   ├── destylacja.py          ← korpus+etykiety → wnioski.md (propozycje, nie zmiany!)
-│   └── wiedza/                ← zaakceptowane notatki *.md + MEMORY.md (indeks)
-├── zarzadzanie/               [plan] ZARZĄDZANIE SKILLAMI I APLIKACJAMI
-│   ├── rejestr.yaml           ← każdy skill/aplikacja: wersja, status, we/wy, test, instalacja
-│   └── audyt.py               ← rejestr vs rzeczywistość (zainstalowany? test PASS? wersja?)
-├── skills/                    [plan] źródła skilli (deploy → ~/.claude/skills + SecondBrain)
-└── wyniki/                    ← wyjścia robocze per zlecenie (nie commitować)
+├── PLAN.md                    ← etapy wdrożenia 0–6 + kryteria przejścia
+├── requirements.txt           ← ezdxf, openpyxl, matplotlib, pyyaml (+shapely w etapie 2)
+├── excalidraw/                ← tablice projektowe + kontekst_deploy/ (oryginały CLAUDE v1/v2)
+├── kontekst/                  ← wiedza przeniesiona z V2: CLAUDE_v1.md, kategorie_szukania.html,
+│   │                            lekcje_54_4867_*.md, strategia_kompletnosc_otworow.md, PLAN_v1.md
+│   └── wiedza/                ← JEDEN magazyn notatek z realnych zleceń (10 reguł) + MEMORY.md;
+│                                tu trafiają destylaty za potwierdzeniem człowieka
+├── config/
+│   ├── typy.yaml              ← baza typów rysunków (lantek_1nn, sbm_kolorowa, niemiecka_blokowa…)
+│   ├── kategorie.yaml         ← rejestr kategorii szukania (1–3 włączone, 4–6 [etap 6])
+│   └── warianty.yaml          ← silniki W-A/W-B/W-C + progi zgodności wariantów
+├── produkcja/                 SYSTEM PRODUKCYJNY
+│   ├── orkiestrator.py        ← WEJŚCIE V3: typowanie + delegacja do W-B (parytet);
+│   │                            warianty→ocena [etap 3]
+│   ├── typowanie.py           ← heurystyki typu z bazy typów (działa; kalibracja [etap 4])
+│   ├── silniki/               ← KOPIE z V1/V2 (tam nie piszemy!) — patrz silniki/README.md:
+│   │   ├── extract_positions.py   W-A (V1: klaster+ranking) — regresja 43/43
+│   │   ├── v2/                    W-B (kategorie 1–3 + weryfikator 8 bramek + galeria.py)
+│   │   ├── region_warstwa.py      W-C (region+warstwa z 54_4867; silnik pełnoprawny [etap 2])
+│   │   └── convert_dwg.py         konwersja DWG→DXF (GstarCAD)
+│   ├── kontrola/
+│   │   ├── bramki.py          ← rejestr 10 bramek + delegacja kontroli post-hoc do W-B
+│   │   ├── licznik_konturow.py ← FLAGER konturów wewn. (szum: off-by-one luster → [etap 2] shapely)
+│   │   └── sweep.py           ← sweep kompletności = domknięcie zlecenia [etap 2]
+│   ├── ocena.py               ← sygnatura + zgodność wariantów (bramka 10; CLI działa, pipeline [etap 3])
+│   └── raport.py              ← podsumowanie semaforów; zapis do wykazu [etap 3–4]
+├── sprawdzanie/               SYSTEM SPRAWDZANIA (README: procedura flag!)
+│   ├── ai/nakladka.py         ← nakładka wynik-na-źródło [etap 2]
+│   └── czlowiek/werdykty.py   ← werdykty przeglądu → nauka/etykiety/ (działa)
+├── testy/                     SYSTEM TESTOWY — jedyna brama do produkcji
+│   ├── regresja.py            ← 43 sprawdzenia na rysunkach testowych (PASS w V3)
+│   ├── testy_v2.py            ← testy modułów W-B (35 sprawdzeń, PASS w V3)
+│   ├── regresja_znane_bledy.py ← XFAIL; [XPASS] = naprawione → awans do regresji
+│   ├── benchmark_v2.py        ← V2 ≥ V1 encja-po-encji (PASS w V3); benchmark_v3 [etap 3]
+│   ├── rysunki/ wzorce/       ← 20 rysunków testowych + wykazy + referencja operatora
+│   ├── pretesty/_render_png.py ← render PNG na CZARNYM tle (jedyny słuszny)
+│   ├── golden/                ← pary wejście→wzorzec (format: golden/README.md; zasila [etap 2])
+│   └── raporty/               ← wyniki testów i metryka zaufania per wersja
+├── zasady/                    SYSTEM TWORZENIA ZASAD (README + szablon propozycji)
+│   ├── reguly/  propozycje/  przyklady/
+├── nauka/                     SYSTEM NAUKI
+│   ├── korpus/                ← decyzje.csv (logger --korpus; poza gitem)
+│   ├── etykiety/              ← etykiety.csv — werdykty człowieka i AI (werdykty.py)
+│   ├── szkolenia/             ← MANUAL UPGRADER (szablon + projekt 54_4867 z V2)
+│   └── destylacja.py          ← korpus+etykiety → szkic wniosków (zero LLM; działa)
+├── zarzadzanie/               ZARZĄDZANIE SKILLAMI I APLIKACJAMI
+│   ├── rejestr.yaml           ← 23 wpisy: skille + aplikacje (wersja, status, test)
+│   └── audyt.py               ← rejestr vs rzeczywistość (PASS; każda sesja od tego zaczyna)
+├── skills/                    ← źródła skilli (README; migracja /wyciagnij-dxf [etap 5])
+└── wyniki/                    ← wyjścia robocze per zlecenie (nie commitować, w .gitignore)
 ```
 
 ## Pipeline produkcyjny (przepływ codzienny)
@@ -297,9 +337,10 @@ ignorowania flag.
 - **Etykiety**: werdykty człowieka i AI z przeglądów + wyniki porównań wariantów.
 - **Szkolenia** (MANUAL UPGRADER): ręcznie wrzucone zlecenie/wykaz z kolumnami
   `SZKOLENIE`+`OPIS` → materiał do destylacji.
-- **Destylacja**: AI czyta korpus+etykiety → `wnioski.md` (co zadziałało, co zawiodło,
-  dlaczego; propozycje) → **człowiek akceptuje** → `nauka/wiedza/<name>.md` + linia
-  w `wiedza/MEMORY.md` + nowy przypadek golden + ewentualna propozycja reguły/typu.
+- **Destylacja** (`nauka/destylacja.py`): agregacja korpus+etykiety → szkic wniosków
+  (co zadziałało, co zawiodło, dlaczego; propozycje) → **człowiek akceptuje** →
+  `kontekst/wiedza/<name>.md` + linia w `kontekst/wiedza/MEMORY.md` + nowy przypadek
+  golden + ewentualna propozycja reguły/typu. Jeden magazyn wiedzy dla całego systemu.
 - **Porównanie ze starymi**: nowe wersje silników na historycznych zleceniach vs to,
   co poszło na laser — poprawa/pogorszenie liczbowo (wejście do benchmarku).
 - **Baza typów rośnie przez naukę**: nowy wzorzec rysunku zaobserwowany w zleceniach →
@@ -340,7 +381,7 @@ wiedzy (`nauka/wiedza/` + `kontekst/`) przed działaniem.
 
 ## Wiedza dziedzinowa — NIE UCZ SIĘ TEGO OD NOWA
 
-Pełna wiedza: `excalidraw/kontekst_deploy/CLAUDEv1.md` (docelowo `kontekst/`). Pigułka:
+Pełna wiedza: `kontekst/CLAUDE_v1.md` + notatki `kontekst/wiedza/*.md` (indeks: `MEMORY.md`). Pigułka:
 
 - Pliki `.dxf` od klienta bywają **DWG w przebraniu** (nagłówek `AC1021`) — wykrywać po
   nagłówku. Konwersja GstarCAD wsadowo; **UNC nie działa** → kopiować do `%TEMP%`;
@@ -378,6 +419,6 @@ Pełna wiedza: `excalidraw/kontekst_deploy/CLAUDEv1.md` (docelowo `kontekst/`). 
 - Nowe pomysły → zawsze najpierw `zasady/propozycje/`; nowy trudny przypadek →
   najpierw `testy/golden/`.
 - Kontrola geometrii zawsze skryptem; AI ocenia dodatkowo i może tylko obniżyć status.
-- Przed ekstrakcją: recall wiedzy (`nauka/wiedza/MEMORY.md` + `kontekst/`) pasującej
+- Przed ekstrakcją: recall wiedzy (`kontekst/wiedza/MEMORY.md` + `kontekst/`) pasującej
   do klienta/prefiksu rysunku — i STOSUJ reguły.
 - Niepewność ⇒ `_DO_SPRAWDZENIA`, nigdy zgadywanie.

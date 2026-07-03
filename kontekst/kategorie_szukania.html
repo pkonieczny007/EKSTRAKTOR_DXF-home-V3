@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<!-- opis: Kategorie szukania widoków dla orkiestratora — otwarta lista do Excalidraw -->
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KATEGORIE SZUKANIA — szkielet do Excalidraw</title>
+<style>
+  :root{
+    --papier:#fdfcf8; --tusz:#1e1e1e; --szary:#8a8a8a;
+    --nieb:#4a7fd6; --ziel:#2f9e44; --pomar:#e8890c;
+    --fiol:#8b5cf6; --czerw:#e03131; --morski:#0ca678;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:32px 40px 64px;
+    background:var(--papier); color:var(--tusz);
+    font:15px/1.5 "Segoe UI", system-ui, sans-serif;
+  }
+  h1,h2,.karta h3,.kat-tytul{font-family:"Segoe Print","Comic Sans MS",cursive}
+  h1{font-size:26px; margin:0 0 4px}
+  .podtytul{color:var(--szary); margin:0 0 28px}
+
+  /* pasek przeplywu orkiestratora */
+  .przeplyw{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    margin:0 0 34px; font-family:"Segoe Print","Comic Sans MS",cursive; font-size:15px;
+  }
+  .krok{border:2px solid var(--tusz); border-radius:10px; padding:8px 14px; background:#fff}
+  .krok.akcent{border-color:var(--nieb); box-shadow:3px 3px 0 rgba(74,127,214,.25)}
+  .strzalka{font-size:20px; color:var(--szary)}
+
+  h2{font-size:20px; margin:44px 0 14px; border-bottom:2px dashed #d8d4c8; padding-bottom:6px}
+
+  /* kolumny kategorii */
+  .plansza{display:grid; grid-template-columns:repeat(auto-fill,minmax(255px,1fr)); gap:18px}
+  .kategoria{border:2.5px solid; border-radius:14px; background:#fff; padding:14px 14px 10px;
+             box-shadow:4px 4px 0 rgba(0,0,0,.06)}
+  .kat-tytul{font-size:16px; margin:0 0 2px}
+  .kat-pyt{font-size:12.5px; color:var(--szary); font-style:italic; margin:0 0 12px}
+  .k-nieb{border-color:var(--nieb)}   .k-nieb .kat-tytul{color:var(--nieb)}
+  .k-ziel{border-color:var(--ziel)}   .k-ziel .kat-tytul{color:var(--ziel)}
+  .k-pomar{border-color:var(--pomar)} .k-pomar .kat-tytul{color:var(--pomar)}
+  .k-fiol{border-color:var(--fiol)}   .k-fiol .kat-tytul{color:var(--fiol)}
+  .k-czerw{border-color:var(--czerw)} .k-czerw .kat-tytul{color:var(--czerw)}
+  .k-morski{border-color:var(--morski)} .k-morski .kat-tytul{color:var(--morski)}
+
+  .karta{border:1.5px solid #d9d5c9; border-radius:9px; padding:8px 10px; margin:0 0 9px; background:#fffef9}
+  .karta h3{font-size:13.5px; margin:0 0 3px}
+  .karta p{font-size:12.5px; margin:0; color:#555}
+  .status{float:right; font-size:11px; border-radius:20px; padding:1px 8px; margin-left:6px; white-space:nowrap}
+  .s-dziala{background:#d3f2dd; color:#1d7a35}
+  .s-czesc{background:#fdeeca; color:#9a6b00}
+  .s-pomysl{background:#e8e2fb; color:#6742c9}
+
+  /* karta-widmo: dodaj kategorie */
+  .kategoria.nowa{border-style:dashed; border-color:#b9b4a6; background:transparent;
+                  display:flex; flex-direction:column; align-items:center; justify-content:center;
+                  min-height:180px; color:var(--szary); box-shadow:none}
+  .kategoria.nowa .plus{font-size:44px; line-height:1; font-family:"Segoe Print",cursive}
+  .kategoria.nowa p{font-size:13px; text-align:center; margin:8px 12px 0}
+
+  .legenda{display:flex; gap:14px; flex-wrap:wrap; margin:16px 0 0; font-size:12.5px; color:#555}
+
+  /* sekcje tekstowe */
+  .ramka{border:2px solid var(--tusz); border-radius:14px; background:#fff; padding:18px 22px; margin:14px 0}
+  .ramka.ostrzezenie{border-color:var(--czerw); background:#fff8f8}
+  .ramka ul{margin:8px 0 0; padding-left:22px}
+  .ramka li{margin:5px 0}
+  code{background:#f1eee4; border-radius:4px; padding:1px 5px; font-size:13px}
+  .dwie-kol{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+  @media(max-width:900px){.dwie-kol{grid-template-columns:1fr}}
+  .mono{font-family:Consolas,monospace; font-size:13px; background:#26241f; color:#e8e4d8;
+        border-radius:10px; padding:14px 18px; overflow-x:auto; white-space:pre; line-height:1.55}
+</style>
+</head>
+<body>
+
+<h1>KATEGORIE SZUKANIA</h1>
+<p class="podtytul">Szkielet do rozpisania na tablicy Excalidraw · lista OTWARTA — kategorie można dodawać bez ruszania silnika · 02.07.2026</p>
+
+<div class="przeplyw">
+  <span class="krok">rysunek + wykaz</span><span class="strzalka">➜</span>
+  <span class="krok akcent">SZUKANIE<br><small>którą kategorią znaleźć widok?</small></span><span class="strzalka">➜</span>
+  <span class="krok akcent">EKSTRAKCJA<br><small>metody z tablicy METODY</small></span><span class="strzalka">➜</span>
+  <span class="krok akcent">WERYFIKACJA<br><small>100% pewności</small></span><span class="strzalka">➜</span>
+  <span class="krok">DXF do Lantka</span>
+</div>
+
+<h2>Plansza kategorii (kolumna = kategoria, kartka = technika)</h2>
+<div class="plansza">
+
+  <div class="kategoria k-nieb">
+    <h3 class="kat-tytul">1. Po strukturze rysunku</h3>
+    <p class="kat-pyt">jak klient zakodował pozycje w pliku?</p>
+    <div class="karta"><span class="status s-dziala">działa</span><h3>Warstwa pozycyjna</h3><p>Lantek-style: warstwa <code>1NN</code> = pozycja NN (101 → poz. 1)</p></div>
+    <div class="karta"><span class="status s-dziala">działa</span><h3>Po kolorze</h3><p>SBM 1-warstwowa: kontur=2 żółty, wymiary=3, gięcie=6 magenta</p></div>
+    <div class="karta"><span class="status s-czesc">częściowo</span><h3>Bloki INSERT</h3><p>rozbicie <code>virtual_entities()</code> zanim cokolwiek (niemiecka blokowa)</p></div>
+    <div class="karta"><span class="status s-dziala">działa</span><h3>Bez struktury — klastrowanie</h3><p>fallback geometryczny, progi gap 8 → 4 → 2 mm</p></div>
+  </div>
+
+  <div class="kategoria k-ziel">
+    <h3 class="kat-tytul">2. Po wymiarach z wykazu</h3>
+    <p class="kat-pyt">który widok pasuje do Abmess_1 × Abmes_2?</p>
+    <div class="karta"><span class="status s-dziala">działa</span><h3>Bbox wprost 1:1</h3><p>proste elementy — wymiary zgadzają się bez kombinowania</p></div>
+    <div class="karta"><span class="status s-dziala">działa</span><h3>Bbox ze skalą</h3><p>widok w skali (NICE_SCALES), tolerancje dopasowania</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Obwód zamiast boku</h3><p>płaszcze zwinięte: dłuższy bok rozwinięcia ≈ obwód koła π·D</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Rzut skrócony gięciem</h3><p>bok pomniejszony o cos kąta gięcia — wykryć, NIE zgadywać konturu</p></div>
+  </div>
+
+  <div class="kategoria k-pomar">
+    <h3 class="kat-tytul">3. Po cechach geometrii</h3>
+    <p class="kat-pyt">który kandydat to CZYSTY, wycinalny widok?</p>
+    <div class="karta"><span class="status s-dziala">działa</span><h3>Otwarte końce</h3><p>najmniej otwartych końców wygrywa (widok w złożeniu jest poszarpany)</p></div>
+    <div class="karta"><span class="status s-czesc">częściowo</span><h3>Statystyka encji</h3><p>liczba encji, śr. długość LINE, % łuków — filtr pierścieni i śmieci</p></div>
+    <div class="karta"><span class="status s-dziala">działa</span><h3>Otwory w bbox</h3><p>wchłanianie klastrów wewnątrz obrysu (otwory są święte)</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Detekcja izometrii</h3><p>odrzucić rzut 3D o pasującym bbox (złe proporcje kątów)</p></div>
+  </div>
+
+  <div class="kategoria k-fiol">
+    <h3 class="kat-tytul">4. Po adnotacjach tekstowych</h3>
+    <p class="kat-pyt">co rysunek MÓWI o pozycjach?</p>
+    <div class="karta"><span class="status s-czesc">częściowo</span><h3>gespiegelt / mirrored</h3><p>pozycja lustrzana → generuj odbicie bliźniaka (P/L)</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Nr pozycji w dymku</h3><p>TEXT/MTEXT z numerem przy widoku — kotwica szukania</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Tabele wariantowe</h3><p>tabela a[mm] wielu wariantów = STOP, do człowieka</p></div>
+    <div class="karta"><span class="status s-czesc">częściowo</span><h3>Nazwa pliku ↔ Zeinr</h3><p>zera wiodące (055648 vs 55648), krótkie nazwy bez SL</p></div>
+  </div>
+
+  <div class="kategoria k-morski">
+    <h3 class="kat-tytul">5. Po archiwum / korpusie</h3>
+    <p class="kat-pyt">czy ktoś już to kiedyś wyciął?</p>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Baza elementów</h3><p>elementy1.xlsx / LANTEK SQL — nie wycinaj, co już jest (kolumna propozycja)</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Sygnatura geometryczna</h3><p>znormalizowane encje → dopasuj do gotowych DXF ze starych zleceń</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Profil klienta</h3><p>wyuczona tabela konwencji per klient/prefiks (warstwy? kolory? linetypy?)</p></div>
+  </div>
+
+  <div class="kategoria k-czerw">
+    <h3 class="kat-tytul">6. Pomoc człowieka</h3>
+    <p class="kat-pyt">gdy żadna kategoria nie da pewności</p>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Zaznaczanie na screenie</h3><p>operator klika/rysuje ramkę widoku na podglądzie rysunku</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Wybór z kandydatów</h3><p>ramki-kandydaci na PNG → zatwierdź / inna / odrzuć (powód)</p></div>
+    <div class="karta"><span class="status s-pomysl">pomysł</span><h3>Decyzja → korpus</h3><p>każdy klik = etykieta treningowa (paliwo uczenia)</p></div>
+  </div>
+
+  <div class="kategoria nowa">
+    <div class="plus">+</div>
+    <p><b>nowa kategoria</b><br>miejsce celowo puste — nowy moduł + wpis w konfiguracji, zero zmian w silniku</p>
+  </div>
+
+</div>
+
+<div class="legenda">
+  <span><span class="status s-dziala">działa</span> jest w extract_positions.py</span>
+  <span><span class="status s-czesc">częściowo</span> robione ręcznie w sesjach — do zautomatyzowania</span>
+  <span><span class="status s-pomysl">pomysł</span> do zbudowania</span>
+</div>
+
+<h2>Jak dodawać kategorie (architektura otwartej listy)</h2>
+<div class="dwie-kol">
+  <div class="ramka">
+    <b>Każda kategoria = wtyczka o wspólnym interfejsie.</b>
+    <ul>
+      <li>wejście: geometria (msp po rozbiciu bloków) + wiersz wykazu + profil klienta</li>
+      <li>wyjście: lista kandydatów, każdy z <b>pewnością</b> (0–1) i metrykami QC</li>
+      <li>rejestr kategorii w <code>config/kategorie.yaml</code> — kolejność, progi, włącz/wyłącz per profil klienta</li>
+      <li>orkiestrator odpala kategorie po kolei / równolegle i porównuje pewność — <b>nie zna ich środka</b></li>
+      <li>dodanie kategorii = nowy plik w <code>kategorie/</code> + wpis w YAML. Silnika nie dotykamy.</li>
+    </ul>
+  </div>
+  <div class="mono">v2/
+├── orkiestrator.py      # dobór + porównanie kandydatów
+├── kategorie/
+│   ├── __init__.py      # rejestr (auto-discovery)
+│   ├── struktura.py     # kat. 1 → woła funkcje z v1!
+│   ├── wymiary.py       # kat. 2
+│   ├── geometria.py     # kat. 3
+│   ├── adnotacje.py     # kat. 4
+│   ├── korpus.py        # kat. 5
+│   └── czlowiek.py      # kat. 6
+├── weryfikator.py       # wspólny QC dla wszystkich
+└── config/kategorie.yaml</div>
+</div>
+
+<h2>Nie niszczymy obecnej pracy — projekt równoległy</h2>
+<div class="ramka ostrzezenie">
+  <b>Zasada: v1 zostaje nietknięty i działający przez cały czas budowy v2.</b>
+  <ul>
+    <li><b>Nowy pakiet obok</b> (np. <code>src/v2/</code> albo folder <code>EKSTRAKTOR_DXF_v2/</code>) — v2 <b>importuje</b> sprawdzone funkcje z <code>extract_positions.py</code> (klastrowanie, bbox, zapis 1:1, wyśrodkowanie) zamiast je kopiować. Jedno źródło prawdy, zero dublowania bugfixów.</li>
+    <li><b>Stare CLI i skill <code>/wyciagnij-dxf</code> działają jak dotąd</b> — v2 dostaje własne polecenie (np. <code>python src/v2/orkiestrator.py ...</code>).</li>
+    <li><b>Regresja podwójna:</b> <code>testy/regresja.py</code> pilnuje v1 (musi być PASS zawsze); v2 dostaje benchmark <b>v2 vs v1</b> na tych samych 3 rysunkach + realnych zleceniach — v2 „wygrywa" dopiero, gdy jest ≥ v1 na wszystkim.</li>
+    <li><b>Przełączenie:</b> dopiero gdy v2 bije v1 na korpusie, skill przepinamy na v2. Do tego czasu v2 to laboratorium.</li>
+  </ul>
+</div>
+
+<h2>Notatki do przerysowania w Excalidraw</h2>
+<div class="ramka">
+  <ul>
+    <li><b>Układ:</b> u góry pasek przepływu (szukanie → ekstrakcja → weryfikacja), pod nim 6 kolumn-kategorii + jedna pusta ramka „+" z prawej (przestrzeń na nowe).</li>
+    <li><b>Kolory ramek</b> = kolory kategorii z tej strony (niebieski struktura, zielony wymiary, pomarańczowy geometria, fioletowy adnotacje, morski korpus, czerwony człowiek).</li>
+    <li><b>Status kartki:</b> pełna linia = działa, przerywana = częściowo, szkicowa/szara = pomysł.</li>
+    <li><b>Strzałki:</b> każda kategoria → wspólny <b>WERYFIKATOR</b> (jeden lejek — nic nie omija QC), z weryfikatora dwie strzałki: „pewne → Lantek" i „niepewne → kategoria 6 (człowiek) → korpus".</li>
+    <li>Ta strona to szkielet — jak dojdzie kategoria, dopisać kolumnę tu i na tablicy.</li>
+  </ul>
+</div>
+
+</body>
+</html>
