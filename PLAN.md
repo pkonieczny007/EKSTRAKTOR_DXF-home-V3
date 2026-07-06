@@ -158,7 +158,15 @@ skille zainstalowane i w rejestrze (audyt PASS).**
    `testy/raporty/metryka_zaufania.csv` (replace po data+zeinr, MA maleć). Test
    `test_metryka.py` (14). ⬜ czas sprawdzania/pozycję + błędy NA LASER (uciekłe) —
    wymagają instrumentacji przeglądu i feedbacku po wypaleniu (brak danych — uczciwie).
-3. ⬜ Iteracje: kategorie 4–6 (adnotacje, korpus, człowiek) wg `config/kategorie.yaml`.
+3. 🔨 Iteracje: kategorie 4–6 (adnotacje, korpus, człowiek) wg `config/kategorie.yaml`.
+   ✅ (06.07.2026) **Kategoria 4 (adnotacje)** — `produkcja/silniki/v2/kategorie/adnotacje.py`:
+   bąbelek numeru pozycji (`TEXT/MTEXT == nr` lub `Pos./Poz. N`) → najbliższy klaster →
+   kandydat, ale TYLKO gdy wymiar pasuje do wykazu (`match_scale` = filtr przed złym
+   bąbelkiem); hint `gespiegelt/mirrored` → kandydat NIEPEWNY. Priorytet 2/pewność 0.55.
+   Test `test_adnotacje.py` (11). **`wlaczona:false` (opt-in)** — włączenie po benchmarku
+   (zasada 10); `zaladuj_kategorie` pomija `false` przed importem → 0 ryzyka dla W-B
+   (testy_v2 35/35, regresja 43/43 potwierdzone). Decyzja usera: typ dostraja PROGI, nie
+   ogranicza silników. ⬜ kategoria 5 (korpus), 6 (człowiek).
 
 **Kryterium: metryka liczona automatycznie; 3 kolejne zlecenia bez błędu na laserze
 i z malejącym odsetkiem przeglądu.**

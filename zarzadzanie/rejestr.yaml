@@ -230,6 +230,14 @@ narzedzia:
     plik: produkcja/silniki/v2/galeria.py
     test: ""
 
+  - nazwa: kategoria-adnotacje
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "Kategoria 4 szukania (wtyczka W-B): po ADNOTACJACH tekstowych. Babelek numeru pozycji (TEXT/MTEXT == nr LUB 'Pos./Poz. N') -> najblizszy klaster -> kandydat, ale TYLKO gdy wymiar klastra pasuje do wykazu (match_scale = filtr przed zlym babelkiem/tekstem wymiarowym). Hint 'gespiegelt/mirrored/lustro' -> kandydat NIEPEWNY. Priorytet 2/pewnosc 0.55. WLACZONA:false w config/kategorie.yaml (opt-in) - wlaczenie po benchmarku (zasada 10); zaladuj_kategorie pomija wlaczona:false przed importem (0 ryzyka dla W-B)"
+    plik: produkcja/silniki/v2/kategorie/adnotacje.py
+    test: "python testy\\test_adnotacje.py"
+
   - nazwa: destylacja
     typ: aplikacja
     wersja: "0.1"
@@ -245,6 +253,14 @@ narzedzia:
     opis: "Audyt tego rejestru vs rzeczywistosc (pliki, instalacje skilli, testy zdefiniowane)"
     plik: zarzadzanie/audyt.py
     test: "python zarzadzanie\\audyt.py"
+
+  - nazwa: deploy-skilli
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "DEPLOY skilli (etap 5): kopiuje zrodla skills/<nazwa>/ do miejsc z rejestru (instalacje: ~/.claude/skills + SecondBrain UNC). DOMYSLNIE DRY-RUN (plan), --wykonaj = faktyczna kopia; UNC offline/brak zrodla = GLOSNO, nie wywraca reszty. Po deployu audyt -> 0 rozjazdow instalacji"
+    plik: zarzadzanie/deploy_skilli.py
+    test: "python zarzadzanie\\deploy_skilli.py"
 
   - nazwa: metryka-zaufania
     typ: aplikacja

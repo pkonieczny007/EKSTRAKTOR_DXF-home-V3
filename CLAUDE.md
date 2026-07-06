@@ -37,6 +37,7 @@ Poprzedniki (NIETYKALNE, zasada 9):
 ```bash
 # audyt narzedzi (kazda sesja zaczyna od tego)
 python zarzadzanie\audyt.py
+python zarzadzanie\deploy_skilli.py            # deploy skilli do ~/.claude/skills + SecondBrain (DRY-RUN; --wykonaj = kopiuje)
 
 # REGRESJA + TESTY — PO KAZDEJ zmianie w produkcja/ (PASS = warunek oddania!)
 python testy\regresja.py
@@ -55,6 +56,7 @@ python testy\test_raport.py           # raport: merge ocena+raport+pomiar DXF, u
 python testy\test_sprawdz_folder.py   # sprawdzanie AI folderu: nakladka per pozycja -> flaga kompletnosci, auto-obnizenie zielony->zolty
 python testy\test_przeglad.py         # przeglad czlowieka: galeria V3 (semafor finalny, probka zielonych) + worklist werdyktow -> etykiety
 python testy\test_metryka.py          # metryka zaufania: odsetek do przegladu, rozklad semaforow, trend (replace po data+zeinr)
+python testy\test_adnotacje.py        # kategoria 4: babelek nr pozycji -> klaster (filtr wymiarem), hint gespiegelt
 python testy\wszystkie.py             # WSZYSTKIE testy jedna komenda (--szybko pomija wolne)
 
 # EKSTRAKCJA V3 (etap 3: DEFAULT wielowariantowosc W-A/W-B/W-C + ocena; --parytet = sam W-B)
