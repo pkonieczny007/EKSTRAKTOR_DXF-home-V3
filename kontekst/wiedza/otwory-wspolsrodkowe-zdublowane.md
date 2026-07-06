@@ -10,6 +10,13 @@ Zlecenie 54_4867, wsporniki SL10596945 p3/p4. Ekstrakcja zostawila otwor jako
 = poglebienie/countersink/adnotacja, po niemiecku uwaga "wieksza srednica przy
 Verzinkung/galwanizacji"). Do wycinania laserem zostaje **tylko najmniejszy**.
 
+**Termin operatora (2026-07-05):** taki podwojny wspolsrodkowy okrag = **"fertzing"**
+(przelot + poglebienie stozkowe/countersink). To NIE blad rysunku - to jedna cecha:
+laser tnie tylko otwor przelotowy (mniejszy), poglebienie robi sie osobna operacja
+(wiercenie/frezowanie). Wiec dedup do najmniejszego jest semantycznie POPRAWNY, a
+w bilansie kompletnosci (bramka 5) fertzing liczy sie jako JEDEN kontur wewnetrzny
+(dlatego liczymy PO dedupie - inaczej duble maskuja braki).
+
 Osobno: SL10602681_p1 mial ten sam otwor narysowany 2x (identyczny Ø6, ten sam
 srodek) = duplikat do usuniecia.
 

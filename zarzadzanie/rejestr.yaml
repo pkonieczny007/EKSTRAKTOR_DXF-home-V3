@@ -26,11 +26,13 @@ narzedzia:
 
   - nazwa: dxf-testy
     typ: skill
-    wersja: "0"
-    status: plan
-    opis: "Regresja + znane bledy + benchmark jedna komenda, raport do testy/raporty/ (PLAN etap 5)"
-    instalacje: []
-    test: ""
+    wersja: "1.0"
+    status: dziala
+    opis: "Pelna regresja V3 jedna komenda: testy/wszystkie.py odpala wszystkie testy (regresja, testy_v2, benchmark_v2, znane bledy XFAIL + wszystkie test_*.py), zbiera PASS/FAIL + czasy; --szybko pomija wolne. Zrodlo skilla w skills/dxf-testy/ - DEPLOY do ~/.claude/skills + SecondBrain jeszcze nie wykonany (audyt zglosi rozjazd instalacji)"
+    instalacje:
+      - "~/.claude/skills/dxf-testy"
+      - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\dxf-testy"
+    test: "python testy\\wszystkie.py"
 
   - nazwa: dxf-sprawdz
     typ: skill
@@ -91,11 +93,11 @@ narzedzia:
 
   - nazwa: silnik-w-c
     typ: aplikacja
-    wersja: "0.9"
+    wersja: "1.0"
     status: dziala
-    opis: "region+warstwa: wszystkie encje warstwy geometrii w bbox widoku; NARZEDZIE CLI sprawdzone na 54_4867 (8 pozycji); integracja jako silnik wariantow = PLAN etap 2"
+    opis: "region+warstwa: root-fix cech odseparowanych. V3 port: importowalny (0 efektow ubocznych), licznik=bramka 5, OCS->WCS (fertzing lustrzany), wybor trybu geometrii bez zakladania koloru 7 (SL40061302=col2). Odtwarza kompletnosc wzorcow (4/3/12). Stage 2 = auto-fallback w orkiestratorze + benchmark"
     plik: produkcja/silniki/region_warstwa.py
-    test: ""
+    test: "python testy\\test_wc.py"
 
   - nazwa: konwersja-dwg
     typ: aplikacja
@@ -108,11 +110,11 @@ narzedzia:
   # ---------- APLIKACJE: PIPELINE V3 ----------
   - nazwa: orkiestrator-v3
     typ: aplikacja
-    wersja: "0.1"
+    wersja: "1.0"
     status: dziala
-    opis: "Wejscie V3: typowanie (informacyjne) + delegacja 1:1 do W-B (etap 1 parytet); warianty+ocena = etap 3"
+    opis: "Wejscie V3: typowanie + DOMYSLNIE wielowariantowosc (W-A/W-B/W-C + ocena, produkcja/warianty.py; benchmark_v3 V3>=V2 PASS). --parytet = opt-out do samego W-B"
     plik: produkcja/orkiestrator.py
-    test: "python testy\\testy_v2.py"
+    test: "python testy\\benchmark_v3.py"
 
   - nazwa: typowanie
     typ: aplikacja
@@ -124,11 +126,19 @@ narzedzia:
 
   - nazwa: ocena-wariantow
     typ: aplikacja
-    wersja: "0.1"
+    wersja: "1.0"
     status: dziala
-    opis: "Sygnatura geometryczna + porownanie wariantow (bramka 10); CLI dziala, wpiecie w pipeline = etap 3"
+    opis: "score_variants: wybor zwyciezcy na laser (bramki 1/2/5/10 + reguly R1-R5); dyskwalifikacja otwartego konturu/zlego wymiaru, kompletnosc vs zrodlo_prawda (sweep), zgodnosc >=2 metod=pewnosc, rozbieznosc=eskalacja (nigdy cichy wybor); semafor zielony/zolty/czerwony. + stary CLI sygnatur (bramka 10)"
     plik: produkcja/ocena.py
-    test: ""
+    test: "python testy\\test_warianty.py"
+
+  - nazwa: warianty
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "Wielowariantowosc (etap 3): per pozycja generuj W-A/W-B/W-C -> zrodlo_prawda (sweep) -> score_variants wybiera zwyciezce -> nazwa produkcyjna + ocena.csv; przegrane w warianty/. Znane ograniczenie: lustro+skala ratunkowa -> W-C dyskwalifikowany wymiarem (bezpiecznie). Opt-in: orkiestrator --warianty"
+    plik: produkcja/warianty.py
+    test: "python testy\\test_warianty.py"
 
   - nazwa: raport-zlecenia
     typ: aplikacja
@@ -140,35 +150,43 @@ narzedzia:
 
   - nazwa: bramki
     typ: aplikacja
-    wersja: "0.1"
+    wersja: "0.2"
     status: dziala
-    opis: "Rejestr 10 bramek + delegacja kontroli post-hoc do weryfikatora W-B"
+    opis: "Rejestr 10 bramek + delegacja kontroli post-hoc do weryfikatora W-B; bramka 5 dziala (bilans_konturow.py)"
     plik: produkcja/kontrola/bramki.py
     test: "python produkcja\\kontrola\\bramki.py --lista"
+
+  - nazwa: bilans-konturow
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "BRAMKA 5: bilans konturow wewnetrznych (shapely.polygonize); odporny na lustro/jitter (snap realna odlegloscia, nie round 0,1); dedup okregow OCS->WCS; flaga NIEDOMKNIETE = otwarty kontur"
+    plik: produkcja/kontrola/bilans_konturow.py
+    test: "python testy\\test_bramka5.py"
 
   - nazwa: licznik-konturow
     typ: aplikacja
     wersja: "0.9"
     status: dziala
-    opis: "FLAGER konturow wewnetrznych (cyklomatyka E-V+C); szum: off-by-one na lustrach -> docelowo shapely.polygonize (etap 2); flaga != bramka!"
+    opis: "LEGACY flager cyklomatyczny (E-V+C); dla bramki 5 zastapiony przez bilans-konturow (ma off-by-one na lustrach/jitterze); wciaz uzywany przez region_warstwa.py i regresja_znane_bledy.py jako liczba pomocnicza"
     plik: produkcja/kontrola/licznik_konturow.py
     test: ""
 
   - nazwa: sweep-kompletnosci
     typ: aplikacja
-    wersja: "0"
-    status: szkielet
-    opis: "Obowiazkowe domkniecie zlecenia (zasada 7); implementacja = etap 2"
+    wersja: "1.0"
+    status: dziala
+    opis: "Domkniecie zlecenia (zasada 7): kontury regionu zrodlowego we WSZYSTKICH trybach (col7/col2/col4/all/warstwa; SL40061302 sloty tylko col2!) vs dostarczone; prawda z trybow czystych n_outer==1, nie 'all'; delta>=1 flaga (bramka 5 zbila szum); braki zrodla GLOSNO. Raport do testy/raporty/"
     plik: produkcja/kontrola/sweep.py
-    test: ""
+    test: "python testy\\test_sweep.py"
 
   - nazwa: nakladka
     typ: aplikacja
-    wersja: "0"
-    status: szkielet
-    opis: "Nakladka wynik-na-zrodlo (strategia #1 kompletnosci); implementacja = etap 2"
+    wersja: "1.0"
+    status: dziala
+    opis: "Nakladka wynik-na-zrodlo (strategia #1 kompletnosci): wynik czerwony na regionie zrodla, czarne tlo; alignment bbox-fit + auto-lustro P/L; pokrycie_zrodla<97% = MOZLIWY BRAK CECHY (geometria bez czerwieni). FLAGER - decyduja oczy. Reuzywa sweep+bramka5"
     plik: sprawdzanie/ai/nakladka.py
-    test: ""
+    test: "python testy\\test_nakladka.py"
 
   - nazwa: werdykty
     typ: aplikacja

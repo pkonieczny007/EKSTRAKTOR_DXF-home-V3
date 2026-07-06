@@ -2,16 +2,20 @@
 """
 ORKIESTRATOR V3 - wejscie systemu produkcyjnego (CLAUDE.md: pipeline).
 
-ETAP 1 (PLAN.md) - PARYTET: deleguje 1:1 do silnika W-B (V2: kategorie+weryfikator),
-dokladajac na wejsciu TYPOWANIE rysunku (informacyjnie). Dzieki temu V3 dziala
-od pierwszego dnia dokladnie tak dobrze jak V2 (benchmark), a kolejne etapy
-(warianty W-A/W-C, ocena, bramki 5/10) dokladaja sie bez psucia parytetu.
+ETAP 3 (PLAN.md) - DEFAULT WIELOWARIANTOWOSC: generuje 2-3 warianty (W-A klaster /
+W-B kategorie / W-C region+warstwa) i ocena wybiera zwyciezce na laser (bramki
+1/2/5/10, produkcja/warianty.py). benchmark_v3 potwierdzil V3>=V2 (zasada 10).
+TYPOWANIE rysunku dokladane na wejsciu (informacyjnie).
+  --parytet = stary tryb (sam W-B, szybszy, do debugowania/porownania).
 
-Uzycie (argumenty jak silnik W-B, przekazywane wprost):
+Historia: etap 1 = parytet 1:1 do W-B (V3 == V2 od pierwszego dnia); etapy 2-3
+dolozyly kompletnosc (bramka 5, sweep, nakladka, W-C) i wybor wariantu bez regresu.
+
+Uzycie:
   python produkcja\\orkiestrator.py <rysunek_conv.dxf> <wykaz.xlsx> <folder_wynikow>
-                                    [--galeria] [--korpus [plik.csv]]
+                                    [--parytet]  # opt-out do samego W-B
 
-Po kazdej zmianie tutaj: python testy\\regresja.py + testy\\testy_v2.py (PASS!).
+Po kazdej zmianie tutaj: python testy\\testy_v2.py + testy\\benchmark_v3.py (PASS!).
 """
 import subprocess
 import sys
@@ -19,6 +23,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SILNIK_WB = HERE / "silniki" / "v2" / "orkiestrator.py"
+WARIANTY = HERE / "warianty.py"
 
 sys.path.insert(0, str(HERE))
 import typowanie  # noqa: E402
@@ -38,9 +43,19 @@ def main(argv):
         except Exception as e:  # typowanie jest informacyjne - nie blokuje produkcji
             print(f"[V3] typowanie pominiete ({e})", flush=True)
 
-    print(f"[V3] etap 1 - parytet: delegacja do silnika W-B ({SILNIK_WB.name})",
+    # ETAP 3 - DEFAULT: wielowariantowosc W-A/W-B/W-C + ocena wybiera zwyciezce
+    # (benchmark_v3 V3>=V2 PASS - zasada 10 spelniona). --parytet = stary tryb (sam
+    # W-B), szybszy (1 silnik), do debugowania/porownania.
+    if "--parytet" in argv:
+        rest = [a for a in argv if a != "--parytet"]
+        print(f"[V3] tryb PARYTET (opt-out): delegacja do W-B ({SILNIK_WB.name})",
+              flush=True)
+        return subprocess.call([sys.executable, str(SILNIK_WB), *rest])
+
+    rest = [a for a in argv if a != "--warianty"]
+    print("[V3] etap 3 - WIELOWARIANTOWOSC (default): W-A/W-B/W-C + ocena wybiera zwyciezce",
           flush=True)
-    return subprocess.call([sys.executable, str(SILNIK_WB), *argv])
+    return subprocess.call([sys.executable, str(WARIANTY), *rest])
 
 
 if __name__ == "__main__":

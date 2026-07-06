@@ -42,10 +42,20 @@ python zarzadzanie\audyt.py
 python testy\regresja.py
 python testy\testy_v2.py
 python testy\benchmark_v2.py          # V2 >= V1 encja-po-encji (36 plikow)
+python testy\benchmark_v3.py          # V3 (warianty) >= V2 (W-B) - warunek defaultu --warianty
 python testy\regresja_znane_bledy.py  # XFAIL cele silnika; [XPASS] -> awansuj do regresji
+python testy\test_bramka5.py          # bramka 5: bilans konturow (shapely; lustro/jitter/dedup)
+python testy\test_sweep.py            # sweep: kontury regionu we wszystkich trybach
+python testy\test_nakladka.py         # nakladka wynik-na-zrodlo (pokrycie_zrodla<97 = brak)
+python testy\test_sweep_54_4867.py    # sweep lapie realne braki 54_4867 (safety net)
+python testy\test_gr4.py              # golden 38_1847 gr4: 2 realne bledy (zwodnicza zielen)
+python testy\test_wc.py               # silnik W-C region+warstwa: odtwarza kompletnosc, OCS
+python testy\test_warianty.py         # wielowariantowosc: score_variants + warianty_pozycji (W-C>W-A)
+python testy\wszystkie.py             # WSZYSTKIE testy jedna komenda (--szybko pomija wolne)
 
-# EKSTRAKCJA V3 (etap 1: typowanie + delegacja do W-B; argumenty jak W-B)
-python produkcja\orkiestrator.py <rysunek_conv.dxf> <wykaz.xlsx> <folder_wynikow> [--galeria] [--korpus]
+# EKSTRAKCJA V3 (etap 3: DEFAULT wielowariantowosc W-A/W-B/W-C + ocena; --parytet = sam W-B)
+python produkcja\orkiestrator.py <rysunek_conv.dxf> <wykaz.xlsx> <folder_wynikow> [--parytet]
+python produkcja\warianty.py <rysunek_conv.dxf> <wykaz.xlsx> <folder_wynikow>  # bezposrednio warianty+ocena
 
 # narzedzia pipeline
 python produkcja\typowanie.py <rysunek_conv.dxf>          # typ rysunku (baza: config/typy.yaml)
@@ -95,6 +105,10 @@ Największy dotąd test bojowy V2 — źródło większości root-fixów V3:
 1. **Zero błędnych DXF na produkcji.** Element wypalony błędnie = koszt materiału i maszyny.
    Wątpliwość = `_DO_SPRAWDZENIA` (człowiek). **Nie zgadujemy geometrii.**
 2. **Otwory święte** (także nieokrągłe), kontur zamknięty, skala 1:1, wynik wyśrodkowany (0,0).
+   Detal gotowy przechodzi TRZY kontrole (liczbowa bilans konturów/otworów + wizualne
+   porównanie + ZAWSZE na końcu ZAMKNIĘTE KONTURY = 0 otwartych końców, bramka laserowa)
+   — patrz „KONTROLA DETALU GOTOWEGO". **Zgodny wymiar NIE dowodzi kompletności** (można
+   zgubić otwór/owal przy dobrym bbox); **otwarty kontur = NIE na laser, nawet gdy otwory OK.**
 3. **Szybciej niż ręcznie**: generowanie + sprawdzenie < narysowanie od zera. Człowiek
    porównuje obrazki, nie otwiera CAD; każdy status 🟡/🔴 ma jawny powód.
 4. **Deterministycznie, gdzie się da**: geometria, liczenie konturów/otworów, skala, wymiary
@@ -182,7 +196,9 @@ EKSTRAKTOR_DXF-home-V3/
 │   ├── rejestr.yaml           ← 23 wpisy: skille + aplikacje (wersja, status, test)
 │   └── audyt.py               ← rejestr vs rzeczywistość (PASS; każda sesja od tego zaczyna)
 ├── skills/                    ← źródła skilli (README; migracja /wyciagnij-dxf [etap 5])
-└── wyniki/                    ← wyjścia robocze per zlecenie (nie commitować, w .gitignore)
+├── zlecenia/                  ← SKRZYNKA WEJŚCIOWA: <NN_XXXX>/ z wykazem + dokumentacja/
+│                                (DWG/DXF/TIF od klienta; format: zlecenia/README.md; poza gitem)
+└── wyniki/                    ← wyjścia per zlecenie (wyniki/<NN_XXXX>/, finalne _DXF_gotowe/)
 ```
 
 ## Pipeline produkcyjny (przepływ codzienny)
@@ -226,7 +242,10 @@ WYJŚCIE             DXF 1:1 wyśrodkowany (nazwa produkcyjna z kolumny NAZWA wy
 SPRAWDZANIE AI      nakładka wynik-na-źródło + ocena wizualna 100% flag (może tylko obniżyć status)
    ↓
 SWEEP KOMPLETNOŚCI  domknięcie zlecenia: region+warstwa vs dostarczone dla WSZYSTKICH pozycji
-                    i trybów (kolor 2/4/7/warstwa); flagi delta≥2 → oględziny 100% (zasada 6-7)
+                    i trybów (kolor 2/4/7/warstwa); flagi delta≥1 → oględziny 100% (zasada 6-7)
+                    [delta≥1 od bramki 5/polygonize: szum zbity u źródła, 0 fałszywych na
+                    wzorcach → niższy próg tylko dodaje oględzin; dawne ≥2 = tolerancja szumu
+                    cyklomatyki. Prawda z trybów CZYSTYCH n_outer==1, 'all' tylko diagnostyka]
    ↓
 SPRAWDZANIE CZŁOWIEK galeria: 🟡/🟠/🔴 obowiązkowo + próbka 🟢; werdykty → etykiety
    ↓
@@ -267,6 +286,41 @@ Dodatkowo **nakładka wynik-na-źródło** (flager kompletności — najpewniejs
 🟡 niepewne (każde z jawnym powodem) · 🔴 bramka twarda (wymiar/rejestr/bilanse) =
 NIE zapisujemy jako OK. Żaden wariant nie omija QC.
 
+### KONTROLA DETALU GOTOWEGO — TRZY kontrole (OBOWIĄZKOWO, nie do pominięcia)
+
+> **Powód (2026-07-04/05, zlecenie 38_1847):** (a) silnik dał SL10582608 poz. 1/2 status
+> ZIELONY/ŻÓŁTY, wymiar zgadzał się co do mm — a na środku blachy ZGUBIŁ duży owal.
+> Zieleń silnika ≠ kompletność (pułapka 54_4867 i test2/SL40061302). (b) Wiele detali
+> serii SL4 wyszło z KONTUREM OTWARTYM (SL40852200, SL40034116…) — otwarty kontur = NIE
+> na laser, nawet gdy otwory się zgadzają. **Wymiar OK nie zwalnia z kontroli konturów.**
+
+Każdy detal (także 🟢 z silnika) MUSI przejść **wszystkie trzy** kontrole, zanim status
+może być 🟢. Kolejność: liczbowa → wizualna → **ZAWSZE na końcu zamknięte kontury**:
+
+1. **LICZBOWA — bilans konturów/otworów region vs wynik** (bramka 4+5): kontury wewnętrzne
+   + okręgi **PO DEDUPIE współśrodkowych** w REGIONIE źródłowym (bbox widoku / klaster,
+   cała geometria oprócz gięcia kol.6 i osi) vs w WYNIKU. delta ≥1 konturu **lub** ≥1
+   okrąg = FLAGA. Bramka 5 = `produkcja/kontrola/bilans_konturow.py` (shapely.polygonize)
+   — zbiła szum u źródła (odporna na lustro/jitter; 0 fałszywych flag na wzorcach golden),
+   więc próg spadł z ≥2 (tolerancja szumu) do ≥1. HISTORYCZNIE licznik cyklomatyczny
+   ZAWYŻAŁ na kołnierzu/gięciu i źródłach z wymiarami (138/446) — polygonize to naprawił;
+   sweep bierze prawdę z trybów CZYSTYCH (n_outer==1), 'all' tylko diagnostyka.
+2. **WIZUALNA — porównanie obrazów** (niezależna od liczb — łapie to, co licznik przeoczy,
+   i odsiewa fałszywe flagi): render `region-źródło vs wynik` na CZARNYM tle → OCZY
+   porównują cecha-po-cesze. Brak cechy = 🔴, nawet gdy licznik nie flagował.
+3. **ZAMKNIĘTE KONTURY — na KOŃCU, ZAWSZE, dla KAŻDEGO detalu gotowego** (twarda bramka 2,
+   laserowa): liczba wierzchołków nieparzystego stopnia = 0 (kontur domknięty). **>0
+   otwartych końców = 🔴, NIE na laser** — niezależnie od tego, że otwory/wymiar się
+   zgadzają. Ręczna naprawa region+warstwa domyka proste detale, ale ZOSTAWIA otwarty
+   kontur na złożonych z kołnierzem → wtedy 🔴 DO_SPRAWDZENIA (człowiek rysuje).
+
+Zasady wiążące: (a) **żaden detal nie jest 🟢 bez WSZYSTKICH trzech**; (b) flagę zamyka OKO,
+nie rozumowanie o wielkości różnicy (zasada 6); (c) największe różnice oglądać pierwsze;
+(d) status z kontroli można tylko OBNIŻYĆ (zasada 5). Narzędzia (robocze, sprawdzone
+bojowo na 38_1847, do awansu przez testy do `produkcja/kontrola/`):
+`wyniki/38_1847/kontrola_kompletnosci.py` (liczbowa), `render_region.py` (wizualna),
+`triage_gr.py` (liczbowa + zamknięte kontury zbiorczo dla grupy); docelowo `sweep.py` (etap 2).
+
 **Bramka vs flager**: bramka = sygnał czysty (twarda decyzja automatu); flager = sygnał
 z szumem (licznik konturów) — wskazuje GDZIE patrzeć, decyzję podejmują oczy (AI/człowiek),
 100% flag, nigdy po wielkości różnicy (zasada 6). Szum flagera zwalczać u źródła
@@ -290,6 +344,20 @@ ignorowania flag.
 - Flaga uznana za false-positive → wymaga DOWODU (para PNG w raporcie) i wpada do
   galerii przeglądu człowieka jako pozycja do potwierdzenia.
 - Kolejność oględzin: od NAJWIĘKSZYCH różnic (najgroźniejsze braki), nie od najmniejszych.
+
+**KARTA KONTROLNA — werdykt AI dopiero po wypełnieniu wszystkich pól LICZBAMI**
+(wpadka z 2026-07-04: AI znalazło duble okręgów i przestało patrzeć — brak fasoli
+wskazał człowiek; szczegóły: `kontekst/wiedza/kontrola-karta-kontrolna-jeden-blad.md`):
+1. Kontury wewnętrzne źródło-region vs wynik — **PO DEDUPIE okręgów współśrodkowych**
+   (duble MASKUJĄ braki: surowo 5 vs 4 wygląda dobrze, po dedupie 3 vs 4 = brak!).
+2. Okręgi: raw → po dedupie (ile grup współśrodkowych).
+3. Gięcia: encje koloru 6 w źródle vs encje na warstwie GIECIE w wyniku.
+4. `qc_powody` z raportu PRZECZYTANE (bramka 6 flagowała zgubione gięcie — powód
+   nie jest dekoracją).
+5. Oględziny renderu wynik-vs-źródło — dopiero PO liczbach.
+**Jeden znaleziony błąd NIE kończy karty.** Zakaz „prawdopodobnie" w werdykcie:
+albo liczby+render, albo `DO_SPRAWDZENIA`. Przed sesją sprawdzania: kalibracja oczu
+na 1–2 znanych parach z golden (AI musi wskazać brak; nie wskaże → STOP sesji).
 
 ## Sprawdzanie przez człowieka (`sprawdzanie/czlowiek/`)
 
@@ -393,6 +461,10 @@ Pełna wiedza: `kontekst/CLAUDE_v1.md` + notatki `kontekst/wiedza/*.md` (indeks:
 - **Lustra P/L**: adnotacja `gespiegelt/mirrored` lub kolumna `INDEX`; linie gięcia MUSZĄ
   zostać odbite razem z konturem. Linie gięcia nanosić TYLKO gdy P/L albo gięcie pod skosem (>5°).
 - **Otwory współśrodkowe/zdublowane** (Ø13+Ø14.7): zostaw najmniejszy, resztę skasuj.
+- **Gwint = okrąg + współśrodkowy ŁUK** większego Ø (~270°) + `DIMENSION` z tekstem
+  „M 10" (nie MTEXT!): zostaw OBA (nie dedup jak okrąg+okrąg), opisz w wykazie `M10`+gwint,
+  średnica wiercenia wg tabeli (M10→8.5). **Łuk gwintu ~270° to NIE otwarty kontur** —
+  bramka 2 nie może go flagować jako NIEDOMKNIĘTE (`kontekst/wiedza/gwint-okrag-luk-dimension.md`).
 - **Geometria pozycji bywa na RÓŻNYCH kolorach/warstwach** (kolor 2/4/7, warstwa 53/107) —
   auto-wykrycie warstwy geometrii (najczęstsza linia w bbox widoku), nigdy nie zakładać koloru 7.
 - **Bliźniaki bywają asymetryczne** (p1 z owalem Ø225, p2 bez — dwie różne części o tym

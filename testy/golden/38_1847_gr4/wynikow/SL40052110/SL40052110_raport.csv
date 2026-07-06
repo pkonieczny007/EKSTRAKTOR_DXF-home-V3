@@ -1,0 +1,2 @@
+﻿posn;layer;scale;out_w;out_h;wykaz_w;wykaz_h;n_holes;n_bend;n_absorbed;n_geom;n_axis;n_dashed;n_annot;n_clusters;src_x1;src_y1;src_x2;src_y2;status;file;kategoria;technika;pewnosc;n_kandydatow;qc_semafor;qc_powody
+1;(bez warstw, col7, gap=8);5.0;1000.0;345.45;1000.0;345.0;4;2;0;1060;29;0;176;9;77.49;162.69;277.49;231.78;OK (TRYB BEZ WARSTW) [2 linii giecia -> warstwa GIECIE];SL40052110_p1.dxf;struktura;po-kolorze-7 gap=8;0.6;4;ZIELONY;

@@ -3,7 +3,8 @@
 BRAMKI KONTROLI V3 - rejestr 10 bramek + uruchomienie kontroli post-hoc.
 
 Bramki 1-4 i 6-9 REALIZUJE weryfikator silnika W-B (8 bramek QC z V2) -
-ten modul go wola, nie kopiuje. Bramki 5 i 10 to nowosc V3 (PLAN.md etap 2/3).
+ten modul go wola, nie kopiuje. Bramki 5 i 10 to nowosc V3: bramka 5 dziala
+(kontrola/bilans_konturow.py, shapely.polygonize); bramka 10 = etap 3.
 
 Zasada (CLAUDE.md): bramka = twarda decyzja automatu (sygnal czysty);
 flager = sygnal z szumem (licznik_konturow.py) - wskazuje GDZIE patrzec,
@@ -25,7 +26,7 @@ BRAMKI = [
     (2, "kontur domkniety",             "dziala",  "silniki/v2/weryfikator.py (0 otwartych koncow)"),
     (3, "filtr smieci",                 "dziala",  "silniki/v2/weryfikator.py (statystyka encji)"),
     (4, "bilans otworow okraglych",     "dziala",  "silniki/v2/weryfikator.py (TODO etap 2: liczyc w KLASTRZE czesci, nie bbox)"),
-    (5, "bilans konturow wewnetrznych", "plan",    "etap 2: shapely.polygonize (fasole/sloty/kwadraty); flager tymczasowy: kontrola/licznik_konturow.py"),
+    (5, "bilans konturow wewnetrznych", "dziala",  "kontrola/bilans_konturow.py (shapely.polygonize; odporny na lustro/jitter/dedup; test: testy/test_bramka5.py)"),
     (6, "izometria",                    "dziala",  "silniki/v2/weryfikator.py (rozklad dlugosci linii)"),
     (7, "giecie kolor 6",               "dziala",  "silniki/v2/weryfikator.py (zrodlo ma giecie -> wynik ma warstwe GIECIE)"),
     (8, "rejestr widokow",              "dziala",  "silniki/v2/orkiestrator.py (zaden widok 2x)"),

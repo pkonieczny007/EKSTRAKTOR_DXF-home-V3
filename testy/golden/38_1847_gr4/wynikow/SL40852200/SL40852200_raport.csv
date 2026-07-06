@@ -1,0 +1,2 @@
+﻿posn;layer;scale;out_w;out_h;wykaz_w;wykaz_h;n_holes;n_bend;n_absorbed;n_geom;n_axis;n_dashed;n_annot;n_clusters;src_x1;src_y1;src_x2;src_y2;status;file;kategoria;technika;pewnosc;n_kandydatow;qc_semafor;qc_powody
+1;(bez warstw, col7, gap=8);2.0;267.05;50.0;267.0;50.0;1;1;0;910;15;0;145;5;54.38;120.33;79.38;253.86;OK (TRYB BEZ WARSTW) [1 linii giecia -> warstwa GIECIE];SL40852200_p1.dxf;struktura;po-kolorze-7 gap=8;0.6;4;ZOLTY;[2.kontur] 2 otwartych koncow konturu

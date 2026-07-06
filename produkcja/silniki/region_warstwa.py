@@ -1,117 +1,239 @@
 # -*- coding: utf-8 -*-
-"""Ekstrakcja REGION+WARSTWA - root-fix na zgubione cechy odseparowane.
+"""Silnik W-C "region+warstwa" - V3 (zywy, importowalny, OCS-poprawny).
 
-Klaster po sasiedztwie (V1) gubi fasole/sloty/wyspy niepolaczone z konturem
-zewnetrznym. Ale te cechy LEZA WEWNATRZ obwiedni konturu -> mieszcza sie w bbox
-widoku z raportu. Wiec: bierzemy WSZYSTKIE encje WARSTWY GEOMETRII w bbox widoku
-(nie tylko spojny klaster), transformujemy tak jak kontur, czyscimy.
+Root-fix na cechy ODSEPAROWANE (fasole/sloty/wyspy niepolaczone z konturem, ktore
+klaster po sasiedztwie W-A/W-B gubi): bierzemy WSZYSTKIE encje TRYBU GEOMETRII w
+bbox widoku (nie spojny klaster), transformujemy translate(-cx,-cy) @ scale(scale),
+czyscimy, srodkujemy 1:1. Zwalidowany: odtwarza kompletnosc wzorcow golden
+(SL10596945 fasola=4, SL40061302 sloty=3 na kolorze 2, SL10582608 owal=12).
 
-Reguly czyszczenia (kontekst/wiedza/):
-  - okregi wspolsrodkowe/zdublowane -> zostaw NAJMNIEJSZY na srodek.
-  - linie giecia (kolor 6): zostaw gdy P/L albo skos>5st od osi; nie-P/L proste -> usun.
-Uzycie: python _region_warstwa.py   (przetwarza liste CASES nizej)
+Wlasnosci V3 (port z martwego skryptu V2):
+  1. IMPORT: licznik konturow = bramka 5 (../kontrola/bilans_konturow.py,
+     count_interior_contours_shapely) - poprzedni '_licznik_konturow' nie istnial w V3.
+  2. ZERO efektow ubocznych na imporcie: bez mkdir, bez sciezek V2 'wyniki_rysowanie',
+     bez czytania raportow. Czysty interfejs extract_region_warstwa(); IO tylko w save_result().
+  3. FIX OCS (propozycja zaakceptowana 2026-07-05): srodek CIRCLE zawsze OCS->WCS
+     (e.ocs().to_wcs(e.dxf.center)). Po lustrze w CAD okrag ma extrusion (0,0,-1) i
+     surowy e.dxf.center lezy po ZLEJ stronie (x odwrocony) -> dedup wspolsrodkowych
+     nie grupuje, fertzing (przelot+poglebienie, patrz kontekst/wiedza/) zostaje
+     ZDUBLOWANY = dwa przepalenia na laser. Zmierzone (golden lustrzany_okrag_ocs):
+     surowo (-100,50) vs WCS (100,50). ezdxf po transform() ZACHOWUJE extrusion, wiec
+     dedup PO transformacji tez czyta OCS->WCS; okregi w wyniku normalizowane do WCS.
+  4. WYBOR TRYBU GEOMETRII jak sweep.kontury_regionu_zrodla: geometria bywa na kolorze
+     2/4/7 (SL40061302 = kolor 2, ZERO koloru 7 w bbox!). Kandydaci warstwa_geom/col7/
+     col2/col4; czysty = n_outer==1; wybor: max interior (kompletnosc), remis -> najmniej
+     dangles+cuts (smieci), remis -> priorytet. 'all' NIGDY (adnotacje/osie wpuscilyby
+     smieci do WYNIKU na laser - zasada 1).
+  5. GLOSNE logowanie (zasada 15): encje nieprzetransformowane -> info['transform_failed']
+     + uwaga, nie znikaja po cichu.
+
+Interfejs:
+  extract_region_warstwa(src_msp, box, scale, is_pl=False, geom_layer=None)
+      -> (ezdxf.Drawing, info_dict)
+  save_result(doc, path)
+
+CLI:
+  python produkcja\\silniki\\region_warstwa.py <zrodlo.dxf> <x1> <y1> <x2> <y2> <scale> <out.dxf> [--pl]
 """
-import sys, io, csv, math
+import io
+import math
+import sys
+from collections import Counter
 from pathlib import Path
-from collections import Counter, defaultdict
-import ezdxf
-from ezdxf.math import Matrix44
-from ezdxf import bbox as _bb
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-HERE = Path(__file__).resolve().parent
-WYN = HERE / "wyniki_rysowanie"
-OUT = HERE / "poprawki_region_warstwa"
-OUT.mkdir(exist_ok=True)
-sys.path.insert(0, str(HERE))
-from _licznik_konturow import count_interior_contours
+import ezdxf
+from ezdxf import bbox as _bb
+from ezdxf.math import Matrix44
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "kontrola"))
+from bilans_konturow import count_interior_contours_shapely  # noqa: E402
 
 GEOM_TYPES = {"LINE", "ARC", "CIRCLE", "LWPOLYLINE", "POLYLINE", "SPLINE", "ELLIPSE"}
-SKIP_TYPES = {"DIMENSION", "MTEXT", "TEXT", "LEADER", "INSERT", "POINT"}
+TRYBY_KOLOR = {"col7": 7, "col2": 2, "col4": 4}
+PRIORYTET_TRYBOW = ("warstwa_geom", "col7", "col2", "col4")
 
 
-def report_row(zeinr, posn):
-    rap = WYN / zeinr / f"{zeinr}_raport.csv"
-    with open(rap, encoding="utf-8-sig") as f:
-        for r in csv.DictReader(f, delimiter=";"):
-            if int(r["posn"]) == posn:
-                return r
-    return None
+# ------------------------------ klocki pomocnicze ------------------------------
 
-
-def center(e):
+def _center(e):
+    """Srodek bbox encji w WCS (ezdxf.bbox liczy przez path -> OCS-poprawne)."""
     try:
         return _bb.extents([e]).center
     except Exception:
         return None
 
 
-def in_bbox(c, x1, y1, x2, y2, m=1.0):
+def _in_bbox(c, x1, y1, x2, y2, m=1.0):
     return c is not None and x1 - m <= c.x <= x2 + m and y1 - m <= c.y <= y2 + m
 
 
-def detect_geom_layer(msp, box):
-    """Warstwa geometrii = najczestsza warstwa encji GEOM koloru 7 w bbox."""
-    cnt = Counter()
-    for e in msp:
-        if e.dxftype() not in GEOM_TYPES:
-            continue
-        if e.dxf.color != 7:
-            continue
-        c = center(e)
-        if in_bbox(c, *box):
-            cnt[e.dxf.layer] += 1
-    return cnt.most_common(1)[0][0] if cnt else None
+def _effective_color(e, layer_colors):
+    """256=BYLAYER -> kolor warstwy (geometria bywa BYLAYER na kolorowej warstwie)."""
+    c = e.dxf.color
+    return layer_colors.get(e.dxf.layer, 7) if c == 256 else c
+
+
+def _wcs_center(circle):
+    """Srodek CIRCLE w WCS. NIGDY surowy dxf.center: po lustrze CAD extrusion
+    (0,0,-1) trzyma srodek w OCS (x odwrocony) - fix OCS, zmierzony."""
+    return circle.ocs().to_wcs(circle.dxf.center)
 
 
 def is_skos(e, tol_deg=5.0):
-    """Linia pod skosem = kat > tol od poziomu/pionu."""
+    """Linia gieca pod skosem = kat > tol od poziomu/pionu (nie-LINE: zostaw)."""
     if e.dxftype() != "LINE":
-        return True  # ARC/poly na warstwie giecia traktuj jak skos (zostaw)
+        return True
     dx = e.dxf.end.x - e.dxf.start.x
     dy = e.dxf.end.y - e.dxf.start.y
     if abs(dx) < 1e-6 and abs(dy) < 1e-6:
         return False
-    ang = math.degrees(math.atan2(abs(dy), abs(dx)))  # 0..90
-    d = min(ang, abs(90 - ang))                        # odleglosc od osi
-    return d > tol_deg
+    ang = math.degrees(math.atan2(abs(dy), abs(dx)))
+    return min(ang, abs(90 - ang)) > tol_deg
 
 
-def extract(zeinr, posn, is_pl, name):
-    r = report_row(zeinr, posn)
-    x1, y1 = float(r["src_x1"]), float(r["src_y1"])
-    x2, y2 = float(r["src_x2"]), float(r["src_y2"])
-    scale = float(r["scale"])
-    box = (x1, y1, x2, y2)
-    doc = ezdxf.readfile(WYN / zeinr / f"{zeinr}_1_conv.dxf")
-    msp = doc.modelspace()
-    geom_layer = detect_geom_layer(msp, box)
+# --------------------------- wybor trybu geometrii -----------------------------
+
+def zbierz_region(src_msp, box, margin=1.0):
+    """Encje GEOM w bbox: (picked=[(e, kolor_eff)], bends=[e], layer_colors)."""
+    x1, y1, x2, y2 = box
+    if x2 <= x1 or y2 <= y1:
+        raise ValueError(f"bbox zdegenerowany: {box}")
+    layer_colors = {}
+    doc = getattr(src_msp, "doc", None)
+    if doc is not None:
+        for ly in doc.layers:
+            layer_colors[ly.dxf.name] = ly.dxf.color
 
     picked, bends = [], []
-    for e in msp:
-        if e.dxf.layer != geom_layer:
+    for e in src_msp:
+        if e.dxftype() not in GEOM_TYPES:
             continue
-        if e.dxftype() in SKIP_TYPES or e.dxftype() not in GEOM_TYPES:
+        c = _center(e)
+        if not _in_bbox(c, x1, y1, x2, y2, margin):
             continue
-        c = center(e)
-        if not in_bbox(c, *box):
-            continue
-        (bends if e.dxf.color == 6 else picked).append(e)
+        ec = _effective_color(e, layer_colors)
+        if ec == 6 or e.dxf.layer.upper() == "GIECIE":
+            bends.append(e)
+        else:
+            picked.append((e, ec))
+    return picked, bends, layer_colors
 
-    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+
+def detect_geom_layer(picked):
+    """Warstwa geometrii: najczestsza warstwa encji koloru 7; brak koloru 7 ->
+    fallback najczestsza warstwa w ogole (geometria na nietypowym kolorze -
+    SL40061302 = kolor 2). Zwraca (layer|None, fallback:bool)."""
+    cnt7 = Counter(e.dxf.layer for e, ec in picked if ec == 7)
+    if cnt7:
+        return cnt7.most_common(1)[0][0], False
+    cnt = Counter(e.dxf.layer for e, _ in picked)
+    if cnt:
+        return cnt.most_common(1)[0][0], True
+    return None, True
+
+
+def wybierz_tryb(picked, geom_layer, sagitta=0.1, snap_tol=0.1):
+    """Wybor listy encji geometrii sposrod trybow (warstwa_geom/col7/col2/col4).
+
+    Czysty tryb = n_outer==1 (jedna czesc = jedna twarz zewnetrzna). Wybor:
+    max interior (kompletnosc - otwory swiete), remis -> najmniej dangles+cuts
+    (smieci to otwarte lancuchy), remis -> PRIORYTET_TRYBOW. Zaden czysty ->
+    max interior ogolem + uwaga NIEPEWNE (obowiazkowe ogledziny).
+    Zwraca (nazwa_trybu, encje, diag_dict).
+    """
+    listy = {}
+    if geom_layer is not None:
+        listy["warstwa_geom"] = [e for e, _ in picked if e.dxf.layer == geom_layer]
+    for name, kol in TRYBY_KOLOR.items():
+        listy[name] = [e for e, ec in picked if ec == kol]
+
+    metryki, uwagi = {}, []
+    for name in PRIORYTET_TRYBOW:
+        ents = listy.get(name, [])
+        if not ents:
+            metryki[name] = dict(n_ents=0, interior=-1, outer=0, brud=0, flags=[])
+            continue
+        n, det = count_interior_contours_shapely(ents, sagitta=sagitta, snap_tol=snap_tol)
+        metryki[name] = dict(n_ents=len(ents), interior=n, outer=det["outer"],
+                             brud=det["dangles"] + det["cuts"] + det["invalid"],
+                             circles_dedup=det["circles_dedup"], flags=det["flags"])
+
+    czyste = [t for t in PRIORYTET_TRYBOW
+              if metryki[t]["n_ents"] > 0 and metryki[t]["outer"] == 1]
+    if czyste:
+        best_interior = max(metryki[t]["interior"] for t in czyste)
+        kandydaci = [t for t in czyste if metryki[t]["interior"] == best_interior]
+        min_brud = min(metryki[t]["brud"] for t in kandydaci)
+        kandydaci = [t for t in kandydaci if metryki[t]["brud"] == min_brud]
+        tryb = next(t for t in PRIORYTET_TRYBOW if t in kandydaci)
+        rozne = {t: metryki[t]["interior"] for t in czyste
+                 if metryki[t]["interior"] not in (best_interior, 0, -1)}
+        if rozne:
+            uwagi.append(f"ROZBIEZNOSC trybow czystych: {tryb}={best_interior} vs "
+                         f"{rozne} -> ogladac render (zasada 6)")
+    else:
+        dostepne = [t for t in PRIORYTET_TRYBOW if metryki[t]["n_ents"] > 0]
+        if not dostepne:
+            raise ValueError("brak encji geometrii w regionie (GLOSNO - sprawdz bbox/zrodlo)")
+        best_interior = max(metryki[t]["interior"] for t in dostepne)
+        tryb = next(t for t in dostepne if metryki[t]["interior"] == best_interior)
+        uwagi.append(f"ZADEN tryb czysty (outer: "
+                     f"{ {t: metryki[t]['outer'] for t in dostepne} }) -> tryb={tryb} "
+                     f"NIEPEWNY, obowiazkowe ogledziny (zasada 6)")
+
+    return tryb, listy[tryb], dict(metryki=metryki, uwagi=uwagi)
+
+
+# --------------------------------- ekstrakcja ----------------------------------
+
+def extract_region_warstwa(src_msp, box, scale, is_pl=False, geom_layer=None,
+                           margin=1.0, sagitta=0.1, snap_tol=0.1, dedup_tol=0.3):
+    """Ekstrakcja region+warstwa jednego widoku -> (ezdxf.Drawing, info_dict).
+
+    src_msp: modelspace ZRODLA; box=(x1,y1,x2,y2) w ukladzie zrodla; scale z raportu.
+    is_pl: pozycja P/L (lustro) -> linie giecia zostaja wszystkie; inaczej tylko skos>5st.
+    geom_layer: wymuszenie warstwy geometrii (None = auto: kolor 7 -> fallback).
+    Bez zapisu na dysk - zapis przez save_result(). Wynik: 1:1, wysrodkowany (0,0),
+    okregi po dedupie wspolsrodkowych (zostaje najmniejszy, srodek WCS), giecia na
+    warstwie GIECIE kolor 6.
+    """
+    picked, bends_all, layer_colors = zbierz_region(src_msp, box, margin)
+    if not picked:
+        raise ValueError(f"brak geometrii w bbox {box} (GLOSNO - sprawdz bbox/zrodlo)")
+
+    if geom_layer is None:
+        det_layer, warstwa_fallback = detect_geom_layer(picked)
+    else:
+        det_layer, warstwa_fallback = geom_layer, False
+    tryb, geom_ents, diag = wybierz_tryb(picked, det_layer, sagitta, snap_tol)
+    uwagi = list(diag["uwagi"])
+    if warstwa_fallback:
+        uwagi.append(f"detect_geom_layer: zero koloru 7 w bbox -> fallback warstwa "
+                     f"'{det_layer}' (geometria na nietypowym kolorze - SL40061302=kolor 2)")
+
+    # giecia tylko z warstw wybranej geometrii + warstw GIECIE (osie kol.6 z
+    # obcych warstw nie wchodza)
+    warstwy_geom = {e.dxf.layer for e in geom_ents}
+    bends = [e for e in bends_all
+             if e.dxf.layer in warstwy_geom or e.dxf.layer.upper() == "GIECIE"]
+
+    x1, y1, x2, y2 = box
+    cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
     m = Matrix44.translate(-cx, -cy, 0) @ Matrix44.scale(scale, scale, 1)
 
     new = ezdxf.new(dxfversion="AC1021")
     new.layers.add("GIECIE", color=6)
     nmsp = new.modelspace()
+    transform_failed = []
 
     # kontur + otwory
     circles = []
-    for e in picked:
+    for e in geom_ents:
         ne = e.copy()
         try:
             ne.transform(m)
-        except Exception:
+        except Exception as ex:
+            transform_failed.append(f"{e.dxftype()} handle={e.dxf.handle}: {ex}")
             continue
         ne.dxf.layer = "0"
         ne.dxf.color = 7
@@ -119,101 +241,104 @@ def extract(zeinr, posn, is_pl, name):
             circles.append(ne)
         else:
             nmsp.add_entity(ne)
-    # okregi wspolsrodkowe/zdublowane -> najmniejszy na srodek
-    by = defaultdict(list)
-    for ne in circles:
-        by[(round(ne.dxf.center.x, 1), round(ne.dxf.center.y, 1))].append(ne)
-    n_circ_raw = len(circles)
-    for grp in by.values():
-        grp.sort(key=lambda c: c.dxf.radius)
-        nmsp.add_entity(grp[0])
-    n_circ = len(by)
 
-    # linie giecia
-    kept_bends = 0
+    # dedup okregow wspolsrodkowych (fertzing: przelot+poglebienie -> NAJMNIEJSZY).
+    # Srodek ZAWSZE OCS->WCS: ezdxf po transform() ZACHOWUJE extrusion (0,0,-1)
+    # i center w OCS - surowe grupowanie by nie sparowalo (fix OCS).
+    grupy = []  # [(wcs_center(Vec3), [circle,...])]
+    for ne in circles:
+        c = _wcs_center(ne)
+        for gc, lst in grupy:
+            if math.hypot(c.x - gc.x, c.y - gc.y) <= dedup_tol:
+                lst.append(ne)
+                break
+        else:
+            grupy.append((c, [ne]))
+    circ_raw, circ_dedup = len(circles), len(grupy)
+    for gc, lst in grupy:
+        best = min(lst, key=lambda c: c.dxf.radius)
+        best.dxf.center = (gc.x, gc.y, 0)     # normalizacja do WCS (okrag symetryczny)
+        best.dxf.extrusion = (0, 0, 1)
+        nmsp.add_entity(best)
+
+    # linie giecia: P/L -> wszystkie; inaczej tylko skos>5st (proste osiowe out)
+    bends_kept = 0
     for e in bends:
-        keep = is_pl or is_skos(e)
-        if not keep:
+        if not (is_pl or is_skos(e)):
             continue
         ne = e.copy()
         try:
             ne.transform(m)
-        except Exception:
+        except Exception as ex:
+            transform_failed.append(f"GIECIE {e.dxftype()} handle={e.dxf.handle}: {ex}")
             continue
         ne.dxf.layer = "GIECIE"
         ne.dxf.color = 6
         nmsp.add_entity(ne)
-        kept_bends += 1
+        bends_kept += 1
 
+    if transform_failed:
+        uwagi.append(f"transform_failed={len(transform_failed)} encji NIE weszlo do "
+                     f"wyniku (GLOSNO, zasada 15): {transform_failed}")
+
+    if len(nmsp) == 0:
+        raise ValueError("wynik pusty po transformacji (GLOSNO)")
+
+    # wysrodkowanie 1:1 na (0,0)
     ext = _bb.extents(nmsp)
-    mv = Matrix44.translate(-(ext.extmin.x + ext.extmax.x) / 2,
-                            -(ext.extmin.y + ext.extmax.y) / 2, 0)
+    mv = Matrix44.translate(-(ext.extmin.x + ext.extmax.x) / 2.0,
+                            -(ext.extmin.y + ext.extmax.y) / 2.0, 0)
     for e in nmsp:
         e.transform(mv)
     ext = _bb.extents(nmsp)
     nmsp.reset_extents((ext.extmin.x, ext.extmin.y, 0), (ext.extmax.x, ext.extmax.y, 0))
 
-    out_path = OUT / f"{name}.dxf"
-    new.saveas(out_path)
-    ic, det = count_interior_contours(nmsp)
-    return dict(name=name, w=round(max(ext.size.x, ext.size.y), 1),
-                h=round(min(ext.size.x, ext.size.y), 1), circ=n_circ,
-                circ_raw=n_circ_raw, bends_src=len(bends), bends_kept=kept_bends,
-                interior=ic, layer=geom_layer, path=out_path)
+    # raport interior WYNIKU = bramka 5 (GIECIE/kolor 6 wykluczone w liczniku)
+    interior, det = count_interior_contours_shapely(
+        list(nmsp), sagitta=sagitta, snap_tol=snap_tol, dedup_center_tol=dedup_tol)
+
+    info = dict(
+        tryb=tryb, geom_layer=det_layer, warstwa_fallback=warstwa_fallback,
+        n_picked=len(picked), n_geom=len(geom_ents),
+        circ_raw=circ_raw, circ_dedup=circ_dedup,
+        bends_src=len(bends), bends_kept=bends_kept,
+        interior=interior, interior_detale=det,
+        wymiar_x=round(ext.size.x, 2), wymiar_y=round(ext.size.y, 2),
+        transform_failed=transform_failed,
+        tryby_metryki=diag["metryki"], uwagi=uwagi,
+    )
+    return new, info
 
 
-def mirror(base_name, dst_name):
-    doc = ezdxf.readfile(OUT / f"{base_name}.dxf")
-    msp = doc.modelspace()
-    for e in msp:
-        try:
-            e.transform(Matrix44.scale(-1, 1, 1))
-        except Exception:
-            pass
-    ext = _bb.extents(msp)
-    mv = Matrix44.translate(-(ext.extmin.x + ext.extmax.x) / 2,
-                            -(ext.extmin.y + ext.extmax.y) / 2, 0)
-    for e in msp:
-        e.transform(mv)
-    ext = _bb.extents(msp)
-    msp.reset_extents((ext.extmin.x, ext.extmin.y, 0), (ext.extmax.x, ext.extmax.y, 0))
-    doc.saveas(OUT / f"{dst_name}.dxf")
-    ic, _ = count_interior_contours(msp)
-    return dict(name=dst_name, w=round(max(ext.size.x, ext.size.y), 1),
-                h=round(min(ext.size.x, ext.size.y), 1), interior=ic, mirror_of=base_name)
+def save_result(doc, path):
+    """Cienki helper zapisu (jedyne IO; poza importem). Tworzy folder docelowy."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    doc.saveas(path)
+    return path
 
 
-# (zeinr, posn, is_pl, name, mirror_name|None)
-CASES = [
-    ("SL10585490", 1, True,  "SL10585490_p1P", "SL10585490_p2L"),
-    ("SL40051182", 1, True,  "SL40051182_p1P", "SL40051182_p2L"),
-    ("SL10596954", 1, False, "SL10596954_p1",  None),
-    ("SL40071953", 1, True,  "SL40071953_p1P", "SL40071953_p2L"),
-    ("SL10596953", 1, False, "SL10596953_p1",  None),
-    ("SL10596953", 2, False, "SL10596953_p2",  None),
-    ("SL10596954", 2, False, "SL10596954_p2",  None),
-    ("SL10599245", 1, True,  "SL10599245_p1",  None),
-    ("SL10599245", 2, True,  "SL10599245_p2",  None),  # p2 = OSOBNY widok (nie lustro)
-    ("SL41061329", 1, False, "SL41061329_p1",  None),
-    ("SL10599171", 1, False, "SL10599171_p1",  None),  # wykryte sweepem: +4 sloty poziome
-]
+# ------------------------------------ CLI --------------------------------------
 
-
-def main():
-    print(f"=== REGION+WARSTWA -> {OUT} ===\n")
-    print(f"{'nazwa':22} {'wymiar':14} {'okr':>4} {'okr_raw':>7} {'gie_src':>7} {'gie_ok':>6} {'kontury':>7}  warstwa")
-    for zeinr, posn, is_pl, name, mname in CASES:
-        try:
-            res = extract(zeinr, posn, is_pl, name)
-        except Exception as e:
-            print(f"{name:22} BLAD: {e}")
-            continue
-        print(f"{res['name']:22} {str(res['w'])+'x'+str(res['h']):14} {res['circ']:>4} "
-              f"{res['circ_raw']:>7} {res['bends_src']:>7} {res['bends_kept']:>6} {res['interior']:>7}  L{res['layer']}")
-        if mname:
-            mr = mirror(name, mname)
-            print(f"{mr['name']:22} {str(mr['w'])+'x'+str(mr['h']):14} {'':>4} {'':>7} {'':>7} {'':>6} {mr['interior']:>7}  (lustro z {name})")
+def main(argv):
+    if len(argv) < 7:
+        print(__doc__)
+        return 2
+    src, out = Path(argv[0]), Path(argv[6])
+    box = tuple(float(v) for v in argv[1:5])
+    scale = float(argv[5])
+    is_pl = "--pl" in argv[7:]
+    msp = ezdxf.readfile(src).modelspace()
+    doc, info = extract_region_warstwa(msp, box, scale, is_pl=is_pl)
+    save_result(doc, out)
+    print(f"{out.name}: tryb={info['tryb']} warstwa={info['geom_layer']} "
+          f"wymiar={info['wymiar_x']}x{info['wymiar_y']} interior={info['interior']} "
+          f"okregi={info['circ_raw']}->{info['circ_dedup']} giecia={info['bends_kept']}")
+    for u in info["uwagi"]:
+        print(f"  ! {u}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    raise SystemExit(main(sys.argv[1:]))

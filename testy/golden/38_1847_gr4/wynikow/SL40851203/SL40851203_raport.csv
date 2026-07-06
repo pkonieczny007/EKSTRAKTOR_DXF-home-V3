@@ -1,0 +1,4 @@
+﻿posn;layer;scale;out_w;out_h;wykaz_w;wykaz_h;n_holes;n_bend;n_absorbed;n_geom;n_axis;n_dashed;n_annot;n_clusters;src_x1;src_y1;src_x2;src_y2;status;file;kategoria;technika;pewnosc;n_kandydatow;qc_semafor;qc_powody
+1;(bez warstw, all, gap=4);2.0;316.24;50.0;316.0;50.0;1;0;3;1909;27;0;385;22;300.58;197.57;325.58;355.69;OK (TRYB BEZ WARSTW);SL40851203_p1.dxf;wymiary;bbox-ze-skala gap=4;0.6;6;ZOLTY;[6.giecie] w widoku zrodlowym 2 linii koloru 6 (giecie?), na warstwie GIECIE 0 - zgubione giecie?
+2;102;2.0;374.0;108.0;374.0;108.0;0;0;0;1909;27;18;385;8;484.32;181.88;538.32;368.88;OK [+18 linii kreskowanych - sprawdz giecie];SL40851203_p2.dxf;struktura;warstwa-102;0.85;7;ZIELONY;
+3;103;2.0;100.0;50.0;100.0;50.0;0;0;0;1909;27;13;385;5;484.32;77.16;509.32;127.16;OK [+13 linii kreskowanych - sprawdz giecie];SL40851203_p3.dxf;struktura;warstwa-103;0.85;19;ZIELONY;

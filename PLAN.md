@@ -19,32 +19,69 @@ jedno realne zlecenie przepuszczone przez orkiestrator V3 bez różnic vs V2.** 
 
 ## Etap 2 — kontrola kompletności (root-fix lekcji 54_4867) ⬜
 
-1. **Bramka 5**: bilans konturów wewnętrznych przez `shapely.polygonize`
-   (w KLASTRZE części, nie bbox; bez off-by-one sklejania 0,1 mm na lustrach).
-   Do `requirements.txt` wchodzi `shapely`.
-2. **Nakładka wynik-na-źródło** (`sprawdzanie/ai/nakladka.py`) — render pary + overlay;
-   wejście dla oględzin AI (100% flag, od największych różnic, dowód PNG).
-3. **Sweep kompletności** (`produkcja/kontrola/sweep.py`) — wszystkie pozycje,
-   wszystkie tryby (col7/col2/col4/all/warstwa-geometria); raport do `testy/raporty/`.
-4. **Integracja W-C**: `region_warstwa.py` jako pełnoprawny silnik (interfejs jak W-A/W-B),
-   auto-fallback gdy bramka 5 / nakładka wykryją brak.
-5. Przypadki 54_4867 (8 pozycji z realnymi brakami) → `testy/golden/` jako testy bramki 5.
+1. ✅ (05.07.2026) **Bramka 5**: bilans konturów wewnętrznych przez `shapely.polygonize`
+   — `produkcja/kontrola/bilans_konturow.py` (snap koncówek realną odległością zamiast
+   `round` 0,1 → brak off-by-one na lustrach/jitterze; dedup okręgów OCS→WCS;
+   flaga NIEDOMKNIETE = otwarty kontur). Test: `testy/test_bramka5.py` (32 sprawdzenia:
+   7 wzorców golden + inwarianty lustro/jitter/dedup). `shapely` w `requirements.txt`.
+   Zmierzone: cyklomatyka gubi kontur na jitterze (11≠12), shapely stabilny.
+   Znaleziono przy okazji bug OCS w `region_warstwa.py` → `zasady/propozycje/2026-07-05_ocs_...md`.
+2. ✅ (05.07.2026) **Nakładka wynik-na-źródło** (`sprawdzanie/ai/nakladka.py`) — wynik
+   czerwony (alpha) na regionie źródła, czarne tło; alignment bbox-fit (s_fit=1/scale)
+   + auto-lustro P/L (pokrycie obu wariantów); `pokrycie_zrodla<97%` = geometria źródła
+   BEZ czerwieni = MOZLIWY BRAK CECHY (strategia #1, zwalidowane wizualnie: zgubiona
+   fasola świeci na biało). FLAGER (decydują oczy). Test: `testy/test_nakladka.py`
+   (13 sprawdzeń). Reużywa `sweep.kontury_regionu_zrodla` + bramkę 5.
+3. ✅ (05.07.2026) **Sweep kompletności** (`produkcja/kontrola/sweep.py`) — wszystkie
+   pozycje, wszystkie tryby (col7/col2/col4/all/warstwa-geometria); prawda z trybów
+   CZYSTYCH (n_outer==1), 'all' tylko diagnostyka; delta≥1 = flaga (bramka 5 zbiła
+   szum → 0 fałszywych na wzorcach; próg niższy niż CLAUDE.md delta≥2 — DO POTWIERDZENIA
+   przez człowieka); braki źródła GŁOŚNO (zasada 15); raport do `testy/raporty/sweep_*.csv`.
+   Test: `testy/test_sweep.py` (19 sprawdzeń). Zmierzone: SL40061302 sloty widzi tylko col2.
+4. **Integracja W-C** — Stage 1 ✅ (05.07.2026): `region_warstwa.py` sportowany do V3 —
+   martwy skrypt (import `_licznik_konturow` nie istniał, mkdir na module, ścieżka V2)
+   → żywy importowalny silnik: `extract_region_warstwa(src_msp, box, scale, is_pl)`,
+   licznik = bramka 5, **fix OCS→WCS** (fertzing lustrzany, propozycja zaakceptowana),
+   wybór trybu geometrii bez zakładania koloru 7 (SL40061302=col2). Odtwarza kompletność
+   wzorców (fasola 4, sloty 3, owal 12). Golden `lustrzany_okrag_ocs/`. Test `test_wc.py`
+   (28 sprawdzeń). **Stage 2 ⬜: auto-fallback w orkiestratorze (gdy sweep/nakładka wykryją
+   brak → W-C na tym widoku) + benchmark V3≥V2.**
+5. ✅ (05.07.2026) Realne braki → `testy/golden/` jako testy sweepa/bramki 5:
+   - `testy/test_sweep_54_4867.py` — silnik na źródłach 54_4867 (SL400521106 sloty 8→4,
+     SL10596945 fasola 4→3), sweep MUSI oflagować (safety net, 7 sprawdzeń).
+   - `testy/golden/38_1847_gr4/` + `testy/test_gr4.py` (człowiek, zasada 11) — 10 pozycji
+     realnej partii: 8🟢 + 2 REALNE błędy. HEADLINE **SL40052110_p1 = ZWODNICZA ZIELEŃ**:
+     wynik sam przechodzi bramkę 5 (interior=4, kontur domknięty, wymiar co do mm), a
+     dopiero sweep-vs-źródło ujawnia stratę 8 cech (delta=8); stary licznik cyklomatyczny
+     to przepuścił (źródło zaśmiecone 176 wymiarami) — **dowód, że sweep-vs-źródło jest
+     OBOWIĄZKOWY**. SL40852200 = otwarty kontur → czerwony (bramka 2). 51 sprawdzeń, PASS.
 
-**Kryterium: bramka 5 + sweep wykrywają WSZYSTKIE braki z 54_4867 (golden),
-zero regresji na dotychczasowych testach.**
+**Kryterium: bramka 5 + sweep wykrywają braki z 54_4867/38_1847 (golden),
+zero regresji.** ✅ — potwierdzone na REALNEJ partii produkcyjnej.
 
-## Etap 3 — wielowariantowość + ocena (bramka 10) ⬜
+## Etap 3 — wielowariantowość + ocena (bramka 10) ✅ (06.07.2026; raport.py→etap 4)
 
-1. Orkiestrator generuje warianty wg `config/typy.yaml` (`silniki` per typ)
-   do `wyniki/<zlecenie>/warianty/{poz}__w?.dxf`.
-2. `produkcja/ocena.py` wpięta w pipeline: macierz zgodności, wybór zwycięzcy,
-   `ocena.csv`; rozbieżność = eskalacja (nigdy cichy wybór); przegrane warianty zostają.
-3. `produkcja/raport.py`: scalenie raportów silników + oceny; zapis statusów do wykazu
-   (kolumny jak 54_4867: status kolorem, uwagi, plik_dxf, technologia, wymiar_dxf_x/y,
-   skala, uwagi_wymiar).
+1. ✅ `produkcja/warianty.py` generuje W-A/W-B/W-C per pozycja do `warianty/wA|wB|wC/`;
+   `zrodlo_prawda` = sweep (trzecia niezależna miara). Opt-in: `orkiestrator --warianty`
+   (default = parytet W-B do czasu benchmarku, zasada 10).
+2. ✅ `produkcja/ocena.py::score_variants` wybiera zwycięzcę (bramki 1/2/5/10, R1-R5),
+   `ocena.csv`; rozbieżność = eskalacja (nigdy cichy wybór); przegrane zostają w `warianty/`.
+   Test `test_warianty.py` (17: 6 brzegów + W-C>W-A realny + is_pl). Smoke end-to-end na
+   golden: p3 W-C wygrywa (kompletny), p4 lustro+skala ratunkowa → W-C dyskwalifikowany
+   wymiarem (bezpiecznie) → W-B, flaga niekompletności. **Kluczowy pomiar: W-A przechodzi
+   bramkę wymiaru CO DO SETNYCH identycznie z W-C (braki wewnętrzne) — rozjazd łapie tylko
+   `interior` w sygnaturze bramki 10.**
+3. ✅ (06.07.2026) `benchmark_v3.py` — V3 (warianty) vs V2 (W-B) na rysunkach regresji:
+   42 pozycje, **0 regresji, V3 ≥ V2 PASS** (V3 nie gubi konturów, nie oddaje otwartego
+   konturu, produkuje każdą pozycję). **Default orkiestratora sflipowany na
+   wielowariantowość** (`--parytet` = opt-out). Zasada 10 spełniona.
+4. ✅ (06.07.2026) Refinement lustra: pozycja `LUSTRO z poz. N` → zwycięzca = **odbicie
+   zwycięzcy bliźniaka** (zachowuje kompletność twina; naprawił 2 regresje benchmarku +
+   p4 golden z W-B/3 na LUSTRO/4). Bliźniaki asymetryczne → zawsze 🟡 do potwierdzenia.
+5. ⬜ `produkcja/raport.py`: scalenie raportów + oceny; zapis statusów do wykazu (etap 3-4).
 
-**Kryterium: na golden zgodność ≥2 silników na pozycjach zielonych;
-każda rozbieżność widoczna w raporcie z powodem; benchmark V3 ≥ V2.**
+**Kryterium: na golden zgodność ≥2 silników; każda rozbieżność widoczna w raporcie
+z powodem; benchmark V3 ≥ V2.** ✅ — spełnione (raport.py = domknięcie w etapie 4).
 
 ## Etap 4 — sprawdzanie AI + człowiek, typowanie z bazy ⬜
 

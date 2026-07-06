@@ -10,3 +10,7 @@ testy/rysunki/*.dxf
 testy/rysunki/*.xlsx
 excalidraw/*.excalidraw
 *.zip
+zlecenia/**/*.dwg
+zlecenia/**/*.dxf
+zlecenia/**/*.tif
+zlecenia/**/*.xlsx

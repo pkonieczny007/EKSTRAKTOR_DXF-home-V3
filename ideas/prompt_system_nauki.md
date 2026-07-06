@@ -9,4 +9,4 @@ NAUKA:
  - nauka szybkiego sprawdzania
 
  SPRAWDZANIE:
-- wykorzystać technologie z projektu 
+- wykorzystać technologie z projektu UPGRADE_SKANER_DXF ("\\QNAP-ENERGO\Projekty_INTEGRA\PLANOWANIE\AKTUALNE_PROJEKTY\UPGRADE_SKANER_DXF")

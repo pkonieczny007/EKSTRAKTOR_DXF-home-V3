@@ -19,3 +19,7 @@ venv/
 *.bak
 ~$*.xlsx
 ~$*.xlsm
+
+# dane klienta (zlecenia) - poza gitem
+zlecenia/
+!zlecenia/README.md

@@ -7,3 +7,5 @@
 - [Cechy odseparowane region+warstwa](cechy-odseparowane-region-warstwa.md) — klaster gubi fasole/otwory-wyspy i lapie tabelke; ratunek region+warstwa + liczniki kompletnosci (nakladka, okregi, kontury wewn.)
 - [Technologia Schweissgruppe auto](technologia-schweissgruppe-auto.md) — spaw z tekstu "Schweissgruppe" w DWG, giecie z kolor6; GS/G/S/brak automatycznie (obrobka i pojedyncze spawy z TIF)
 - [Konwersja GstarCAD retry, TIF czerwono](konwersja-gstarcad-retry-tif-czerwono.md) — batch GstarCAD potrzebuje retry; odtworzenie z TIF tylko w ostatecznosci, na czerwono, do sprawdzenia
+- [Karta kontrolna: jeden blad nie konczy ogledzin](kontrola-karta-kontrolna-jeden-blad.md) — werdykt TYLKO po liczbach: kontury wewn. PO DEDUPIE okregow (duble maskuja braki!), giecia zrodlo-vs-GIECIE, qc_powody przeczytane; zakaz "prawdopodobnie"; metoda operatora = cala warstwa (53) z regionu / zaznacz biale
+- [Gwint: okrag + luk + DIMENSION M10](gwint-okrag-luk-dimension.md) — gwint = okrag(wiercenie 8.5) + wspolsrodkowy luk ~270 st + DIMENSION "M 10"; zostaw OBA, opisz w wykazie M10, srednica wg tabeli; luk gwintu to NIE otwarty kontur (bramka 2 falszywie flaguje)
