@@ -45,6 +45,12 @@ WZ_LUSTRO = GOLDEN / "SL10596945_fasola_odseparowana/wzorzec/SL10596945_p4_LUSTR
 BOX = (434.17, 153.97, 490.68, 206.05)
 SCALE = 5.0
 
+# root-fix szumu (wszystko na warstwie '1', geometria KOLOR 2)
+ZR61 = GOLDEN / "SL40061302_sloty_odseparowane/wejscie/SL40061302_1_conv.dxf"
+WZ61 = GOLDEN / "SL40061302_sloty_odseparowane/wzorzec/SL40061302_p1.dxf"
+BOX61 = (50.83, 136.99, 194.3, 241.99)
+SCALE61 = 2.0
+
 
 def _has(uwagi, frag):
     return any(frag in u for u in uwagi)
@@ -124,6 +130,30 @@ def main():
         check("pusty PNG mimo braku", (tmp / "pusty.png").stat().st_size > 0)
         print(f"  pusty:     pokrycie={r4['pokrycie']} (flaga WYNIK PUSTY: "
               f"{_has(r4['uwagi'], 'WYNIK PUSTY')})")
+
+        # (5) ROOT-FIX szumu: SL40061302 - WSZYSTKO na warstwie '1', geometria KOLOR 2,
+        # adnotacje kolory 30/4/3. Fallback warstwowy wrzuca adnotacje do geom ->
+        # POPRAWNY wzorzec dostawal pokrycie_zrodla 34% + 3 FALSZYWE skupiska (falszywe
+        # flagi ucza ignorowania flag). pick_region_czysty bierze tryb czysty col2.
+        # (bez fixu ten blok PADA - to jest jego sens: zmierzone 34.2% i 3 skupiska)
+        if ZR61.exists() and WZ61.exists():
+            r5 = nakladka(str(WZ61), str(ZR61), BOX61, str(tmp / "sl61302.png"), scale=SCALE61)
+            check("root-fix tryb czysty col2",
+                  r5["align_info"].get("tryb_geom") == "col2",
+                  f"tryb_geom={r5['align_info'].get('tryb_geom')}")
+            check("root-fix pokrycie_zrodla>=99 (bylo 34)",
+                  r5["pokrycie_zrodla"] >= 99, f"pokrycie_zrodla={r5['pokrycie_zrodla']}")
+            check("root-fix 0 falszywych skupisk (bylo 3)",
+                  r5["braki_bboxy"] == [], f"braki={r5['braki_bboxy']}")
+            check("root-fix bez falszywej flagi braku",
+                  not _has(r5["uwagi"], "MOZLIWY BRAK"), f"uwagi={r5['uwagi']}")
+            check("root-fix anizotropia <1% (bylo 3.15)",
+                  r5["align_info"].get("anizotropia_proc", 99) < 1.0,
+                  f"anizo={r5['align_info'].get('anizotropia_proc')}")
+            print(f"  SL61302:   pokrycie_zrodla={r5['pokrycie_zrodla']} "
+                  f"tryb={r5['align_info'].get('tryb_geom')} "
+                  f"anizo={r5['align_info'].get('anizotropia_proc'):.2f}% "
+                  f"braki={len(r5['braki_bboxy'])} (root-fix: bylo 34.2%/3 skupiska)")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

@@ -28,6 +28,7 @@ SL40851344
 SL40851344
 SL40851345
 SL40851345
+
 SL40852200
 SL40052110
 SL40852200
@@ -45,3 +46,31 @@ SL10585242
 SL10585242
 SL10585242
 SL10409233
+
+
+Wykonaj brakujące rysunki - z 38_1847-rysuj - brakowało nam rysunków już sa 
+
+SL10584847 ok
+SL10584847
+SL10584847
+SL10585238 p1 błąd wyciągnął z rysunku złożeniowego.
+SL10585238
+SL10585238
+SL10585238
+SL10585242 ok
+SL10585242
+SL10585242
+SL10585242
+SL10409233 ok
+możesz zapisać jako gr 6
+
+i nowe zlecenie to test z 24_0417
+dokumentacje i wykaz zapisałem 
+\\QNAP-ENERGO\tmp\EKSTRAKTOR_DXF_test\24_0417_test
+
+sa tam też DXF_do_wgrania które recznie robiłem 
+wykaz roboczy to 
+"\\QNAP-ENERGO\tmp\EKSTRAKTOR_DXF_test\24_0417_test\ROBOCZY_24.45670417_lista materiałowa akt.18.06.2026.xlsm"
+
+Zacznij od 38 
+ja sobie będę przegladac a ty rob dalej 24

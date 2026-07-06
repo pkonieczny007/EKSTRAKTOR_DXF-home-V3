@@ -55,6 +55,12 @@ jedno realne zlecenie przepuszczone przez orkiestrator V3 bez różnic vs V2.** 
      dopiero sweep-vs-źródło ujawnia stratę 8 cech (delta=8); stary licznik cyklomatyczny
      to przepuścił (źródło zaśmiecone 176 wymiarami) — **dowód, że sweep-vs-źródło jest
      OBOWIĄZKOWY**. SL40852200 = otwarty kontur → czerwony (bramka 2). 51 sprawdzeń, PASS.
+   - ⬜ (07.07.2026, OTWARTY) `testy/golden/SL40034116_p1_zgubione_otwory/` — REALNY defekt
+     produkcyjny (38_1847 gr5): finalny DXF zgubił ~13 Langlochów przy zgodnym wymiarze
+     i domkniętym konturze (żadna bramka nie krzyczała — klasyka 54_4867). Dowód dwustronny:
+     fable interior 25 vs 38; Opus polygonize faces 26 vs 39 (delta 13), CIRCLE 7=7. Kandydat
+     naprawy (W-C warstwa 51) czeka na POTWIERDZENIE CZŁOWIEKA (gruby s=12). Safety net do
+     zrobienia: sweep-vs-źródło MUSI oflagować finalny plik. Przyczyna: stary tryb „bez warstw".
 
 **Kryterium: bramka 5 + sweep wykrywają braki z 54_4867/38_1847 (golden),
 zero regresji.** ✅ — potwierdzone na REALNEJ partii produkcyjnej.
@@ -113,6 +119,17 @@ z powodem; benchmark V3 ≥ V2.** ✅ — ETAP 3 DOMKNIĘTY (raport.py zamyka pr
    0 zakreśleń, bez 2 CIRCLE → 2 skupiska dokładnie w środkach źródłowych okręgów. Test
    `test_nakladka.py` (20). `sprawdz_folder` v1.2: skupisko braku flaguje TAKŻE przy
    pokryciu ≥97% (mała cecha zgubiona, czulsze niż sam próg %). **PUNKT 1 DOMKNIĘTY.**
+   ✅ (07.07.2026) **ROOT-FIX szumu nakładki** (`nakladka.pick_region_czysty`, rdzeń
+   fable-advisor, zweryfikowany niezależnie): na rysunkach typu SL40061302 WSZYSTKO leży
+   na warstwie '1' (geometria=kolor 2, adnotacje=30/4/3) → fallback warstwowy wrzucał
+   adnotacje do geom → bbox-fit anizotropowy (3.15%), auto-lustro się przełączało, diff
+   tonął w FAŁSZYWEJ czerwieni (pokrycie_zrodla **34.2%** na POPRAWNYM wzorcu, 3 fałszywe
+   skupiska — „fałszywe flagi uczą ignorowania flag", zasada 6). Fix bierze geometrię
+   z trybu CZYSTEGO (per_tryb_detale ze sweepa: col7/col2/col4, n_ents>0, outer==1, 0 flag);
+   brak czystego → BEZ ZMIAN (warstwa_geom, golden SL10596945 warstwa 53). Zmierzone:
+   34.2%→**100.0%**, anizo 3.15%→**0.00%**, 3 fałszywe skupiska→**0**. Test `test_nakladka`
+   (25, +blok SL40061302: tryb=col2/pokrycie≥99/0 skupisk). Regresja+testy_v2+sprawdz_folder+
+   sweep 18/18 PASS.
 2. ✅ (06.07.2026) Galeria + przegląd człowieka: `sprawdzanie/czlowiek/przeglad.py`
    (v1.0). Kafelki V3 wynik + źródło (zoom + ramka skąd-wycięto) + **nakładka**;
    semafor FINALNY = obniżenie AI ma pierwszeństwo (zasada 5); kolejność 🔴→🟡→🟢

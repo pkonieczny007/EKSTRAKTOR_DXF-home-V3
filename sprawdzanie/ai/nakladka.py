@@ -189,13 +189,51 @@ def pick_region(src_msp, box, margin=1.0):
     return geom, bend, other, diag
 
 
+def pick_region_czysty(src_msp, box, margin=1.0):
+    """ROOT-FIX szumu nakladki: jak pick_region, ale gdy istnieje CZYSTY tryb
+    kolorowy (col7/col2/col4 z n_ents>0, outer==1, 0 flag) - geometrie bierzemy
+    z NIEGO, nie z fallbacku warstwowego.
+
+    Powod (fable-advisor 2026-07-07, zweryfikowane): na rysunkach typu SL40061302
+    WSZYSTKO lezy na warstwie '1' (geometria = KOLOR 2, adnotacje = kolory 30/4/3).
+    Fallback warstwowy wrzuca adnotacje do 'geom' -> bbox-fit anizotropowy (3.15%),
+    auto-lustro sie przelacza i diff tonie w FALSZYWEJ czerwieni (pokrycie_zrodla
+    34% na POPRAWNYM wzorcu) - a falszywe flagi ucza ignorowania flag (zasada 6).
+    Sweep JUZ liczy per_tryb_detale (CLAUDE.md: prawda z trybow CZYSTYCH n_outer==1),
+    wiec tylko z tego korzystamy. Brak trybu czystego (geometria na wlasnej warstwie
+    numerycznej, np. golden SL10596945 warstwa 53) -> zachowanie BEZ ZMIAN (warstwa_geom).
+    Zwraca (geom, bend, other, diag, tryb)."""
+    geom, bend, other, diag = pick_region(src_msp, box, margin)
+    det = diag["diag"].get("per_tryb_detale", {})
+    tryb = "warstwa_geom"
+    for t in ("col7", "col2", "col4"):
+        d = det.get(t) or {}
+        if d.get("n_ents", 0) > 0 and d.get("outer") == 1 and not d.get("flags"):
+            tryb = t
+            break
+    if tryb == "warstwa_geom":
+        return geom, bend, other, diag, tryb
+    kolor = int(tryb[3:])
+    layer_colors = {}
+    doc = getattr(src_msp, "doc", None)
+    if doc is not None:
+        for ly in doc.layers:
+            layer_colors[ly.dxf.name] = ly.dxf.color
+    geom2, other2 = [], []
+    for e in geom + other:                # bend zostaje (kolor 6 osobno)
+        (geom2 if effective_color(e, layer_colors) == kolor else other2).append(e)
+    return geom2, bend, other2, diag, tryb
+
+
 def nakladka(wynik_dxf, zrodlo_conv, box, out_png, scale=None, lustro=False):
     """Nakladka wyniku (czerwony) na region zrodla (szary), czarne tlo.
     Zwraca dict(align_info, pokrycie, pokrycie_zrodla, uwagi, png)."""
     uwagi = []
     src_msp = ezdxf.readfile(zrodlo_conv).modelspace()
-    geom_e, bend_e, other_e, diag = pick_region(src_msp, box)
+    geom_e, bend_e, other_e, diag, tryb_geom = pick_region_czysty(src_msp, box)
     uwagi += diag["diag"]["uwagi"]
+    if tryb_geom != "warstwa_geom":
+        uwagi.append(f"region z trybu czystego: {tryb_geom} (root-fix szumu nakladki)")
 
     src_sag = SAGITTA if scale in (None, 0) else max(SAGITTA / scale, 0.01)
     src_geom, f1 = _polylines(geom_e, src_sag)
@@ -214,7 +252,7 @@ def nakladka(wynik_dxf, zrodlo_conv, box, out_png, scale=None, lustro=False):
     for f in (f4 + f5):
         uwagi.append(f"wynik nieprzetworzony (GLOSNO): {f}")
 
-    align = dict(metoda="bbox-fit", lustro_wejscie=bool(lustro))
+    align = dict(metoda="bbox-fit", lustro_wejscie=bool(lustro), tryb_geom=tryb_geom)
     ok_align = True
     src_fit_bb = _bbox_pts(src_geom) or _bbox_pts(src_geom + src_other)
     res_bb = _bbox_pts(res_geom)

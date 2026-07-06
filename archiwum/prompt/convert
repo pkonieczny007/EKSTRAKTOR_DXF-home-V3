@@ -1,0 +1,31 @@
+przygotuj rysunki dxf - konwertuj z dwg na dxf
+i zapisz w tym folderze C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home-V3\zlecenia\38_1847_ZUBEHOR\dok_zub
+zacznij od  gr1_zubehor kolumna Postext_1............................... i jedz wg listy wykazu 
+"C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home-V3\zlecenia\38_1847_ZUBEHOR\aiROBOCZY_38.45671847_lista materiałowa+rev.A+domówienia 12.06.2026.xlsx"
+
+potem 
+gr2_zubehor
+gr3_zubehor
+gr4_zubehor
+gr5_zubehor
+daj znac jak skonczysz
+
+
+folder projektu: 
+C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home-V3\zlecenia\38_1847_ZUBEHOR
+
+
+Przygotuj nowe dxf i png silnikiem v3 ekstrakcja
+i zrob png do kazdego 
+
+z wykazu: "C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home-V3\zlecenia\38_1847_ZUBEHOR\aiROBOCZY_38.45671847_lista materiałowa+rev.A+domówienia 12.06.2026.xlsx"
+
+kolumna: sprawdzenie = rysuj_ZUBEHOR
+
+i zakres cały ale dzielimy na grupy wg "C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home-V3\zlecenia\38_1847_ZUBEHOR\aiROBOCZY_38.45671847_lista materiałowa+rev.A+domówienia 12.06.2026.xlsx"
+
+gr1_zubehor
+gr2_zubehor
+gr3_zubehor
+gr4_zubehor
+gr5_zubehor

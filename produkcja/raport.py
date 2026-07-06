@@ -36,6 +36,15 @@ from pathlib import Path
 import ezdxf
 from ezdxf import bbox as _bb
 
+# flager fazowania (kontrola/) - oznacza linie fazowania na ZOLTO + komentarz.
+# Import bezpieczny: gdy modul/shapely niedostepny, raport dziala bez fazowania.
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parent / "kontrola"))
+    import fazowanie as _fazowanie
+except Exception as _e:  # pragma: no cover
+    _fazowanie = None
+    print(f"[RAPORT] fazowanie niedostepne ({_e}) - raport bez oznaczania fazy")
+
 # semafor -> kolor wypelnienia (jak w Excelu: zielony/zolty/czerwony)
 SEM_KOLOR = {"zielony": "C6EFCE", "zolty": "FFEB9C", "czerwony": "FFC7CE"}
 SEM_IKONA = {"zielony": "🟢", "zolty": "🟡", "czerwony": "🔴"}
@@ -229,6 +238,19 @@ def scal(folder_wynikow, rysunek=None):
         werdykt_wym, szcz_wym = _wymiar_ok(dxf_wh, wykaz_pair)
         uwagi_wymiar = werdykt_wym + (f" ({szcz_wym})" if szcz_wym else "")
 
+        # fazowanie: wykryj + oznacz linie na ZOLTO w wyjsciowym DXF + komentarz
+        # (operator 2026-07-07: linie fazy ZOSTAWIC, ale kolor zolty + komentarz;
+        # pozycja i tak zostaje zolta do potwierdzenia - flager nie podnosi statusu).
+        if _fazowanie is not None and dxf_path and Path(dxf_path).exists():
+            try:
+                n_faz, faz_kom = _fazowanie.oznacz_w_pliku(dxf_path)
+                if n_faz:
+                    uwagi = "; ".join(x for x in (uwagi, faz_kom) if x)
+                    technologia = (f"{technologia}+faza"
+                                   if technologia and technologia != "brak" else "faza")
+            except Exception as e:
+                print(f"[RAPORT] fazowanie pominiete ({dxf_path}): {e} (GLOSNO)")
+
         rekordy.append(dict(
             zeinr=zeinr, posn=posn, semafor=semafor, zwyciezca=zwyciezca,
             plik_dxf=plik_dxf or "-", technologia=technologia, skala=skala,
@@ -293,9 +315,11 @@ def zapisz_wykaz(wykaz_path, rekordy, zeinr, out_path=None):
             print(f"[RAPORT] nie znaleziono naglowka Zeinr+Posn w {wykaz_path.name} (GLOSNO)")
             return None
 
-        # kolumny docelowe: istniejace uzyj, brakujace dopisz na koncu
+        # kolumny docelowe: istniejace uzyj, brakujace dopisz ZA OSTATNIA UZYWANA
+        # kolumna (ws.max_column+1), NIE za ostatnim NAZWANYM naglowkiem - inaczej
+        # nachodza na formuly budujace NAZWA (helper cols bez naglowka; bug 2026-07-07).
         kol = dict(naglowek)
-        nast = (max(naglowek.values()) if naglowek else 0) + 1
+        nast = max(ws.max_column, max(naglowek.values()) if naglowek else 0) + 1
         for nazwa in KOL_WYKAZ:
             if nazwa not in kol:
                 ws.cell(row=hr, column=nast, value=nazwa)

@@ -1,7 +1,9 @@
 # Propozycja zasady: srodek CIRCLE czytac OCS->WCS (lustro CAD)
 
 - **Data / autor:** 2026-07-05, AI (fable-advisor) — znalezione przy budowie bramki 5
-- **Status:** ZAAKCEPTOWANA (2026-07-05, człowiek) → poprawka w `produkcja/silniki/region_warstwa.py` przy budowie W-C (golden PRZED naprawą, zasada 11)
+- **Status:** **wdrozona (2026-07-05)** — ZAAKCEPTOWANA przez człowieka → poprawka w
+  `produkcja/silniki/region_warstwa.py` (dedup po WCS), golden `testy/golden/lustrzany_okrag_ocs/`,
+  test `testy/test_wc.py` (T5). Regula: `zasady/reguly/ocs-srodek-okregu.md`.
 
 ## Problem, ktory rozwiazuje
 `e.dxf.center` encji CIRCLE jest w ukladzie **OCS** (Object Coordinate System).

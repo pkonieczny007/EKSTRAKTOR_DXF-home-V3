@@ -162,9 +162,9 @@ narzedzia:
 
   - nazwa: raport-zlecenia
     typ: aplikacja
-    wersja: "1.0"
+    wersja: "1.2"
     status: dziala
-    opis: "Scalenie zlecenia (etap 3-4): merge ocena.csv (wielowariant) LUB raport.csv (parytet) + raport silnika + REALNY pomiar wyjsciowego DXF -> <zeinr>_podsumowanie.csv; wymiar_dxf vs Abmess (bramka 1 tol=max(1mm,0.2%)) = uwagi_wymiar; technologia G/GS/S/brak z rysunku (Schweissgruppe+giecie). Zapis statusow do KOPII wykazu (--wykaz): status kolorem, plik_dxf, technologia, skala, wymiar_dxf_x/y, uwagi_wymiar, uwagi; ORYGINAL NIETKNIETY (pulapka formul)"
+    opis: "Scalenie zlecenia (etap 3-4): merge ocena.csv (wielowariant) LUB raport.csv (parytet) + raport silnika + REALNY pomiar wyjsciowego DXF -> <zeinr>_podsumowanie.csv; wymiar_dxf vs Abmess (bramka 1 tol=max(1mm,0.2%)) = uwagi_wymiar; technologia G/GS/S/brak z rysunku (Schweissgruppe+giecie). Zapis statusow do KOPII wykazu (--wykaz): status kolorem, plik_dxf, technologia, skala, wymiar_dxf_x/y, uwagi_wymiar, uwagi; ORYGINAL NIETKNIETY (pulapka formul). v1.1: wpiete FAZOWANIE - scal() wola fazowanie.oznacz_w_pliku (recolor ZOLTY + komentarz, technologia+=faza). v1.2 (07.07): FIX placementu kolumn wynikowych - za ostatnia UZYWANA kolumna (max_column+1), nie za nazwanym naglowkiem (nachodzily na formuly NAZWA)"
     plik: produkcja/raport.py
     test: "python testy\\test_raport.py"
 
@@ -183,6 +183,30 @@ narzedzia:
     opis: "BRAMKA 5: bilans konturow wewnetrznych (shapely.polygonize); odporny na lustro/jitter (snap realna odlegloscia, nie round 0,1); dedup okregow OCS->WCS; flaga NIEDOMKNIETE = otwarty kontur"
     plik: produkcja/kontrola/bilans_konturow.py
     test: "python testy\\test_bramka5.py"
+
+  - nazwa: fazowanie
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "FLAGER FAZOWANIA (chamfer): linia rownolegla do krawedzi konturu zewn., OBA konce na pierscieniu (T-zlacza) + srodek wewnatrz, d in [1,10]mm, ratio~1 (shapely.polygonize + snap 0.001). Odroznia od slotu/dospawienia/giecia(kol.6). oznacz_w_pliku() koloruje linie fazy na ZOLTY (kol.2) + komentarz - operator 07.07: zostawic linie, kolor zolty, komentarz; pozycja zostaje 🟡 (flager nie podnosi statusu). Rdzen: fable-advisor, zweryfikowany niezaleznie (Opus); 3 pozytywy + 0 falszywych na 260 DXF (znalazl przeoczony SL10583062_p2). Wpiety w raport-zlecenia v1.1"
+    plik: produkcja/kontrola/fazowanie.py
+    test: "python testy\\test_fazowanie.py"
+
+  - nazwa: kontrola-wymiaru
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "STANDARD operatora (2026-07-07): porownanie wymiaru wykaz vs DXF. X-DXF/Y-DXF (int extents) vs Abmess; x=x,y i y=x,y = OR(X==Abm1|Abm2 +-1) orientacja-agnostyczna; PRAWDA PRAWDA -> UWAGI=ok, chocby jeden FALSZ -> sprawdz. Wykaz=BAZA. Formula tez jako tekst Excela (operator dostraja recznie). Zweryfikowany: 14/14 zgodne z archiwum/tmp/pl.PLIK_DO_SPRAWDZENIA"
+    plik: produkcja/kontrola/kontrola_wymiaru.py
+    test: "python testy\\test_kontrola_wymiaru.py"
+
+  - nazwa: marker-wykazu
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "STANDARD zaznaczania wykazu dla zlecenia WIELORYSUNKOWEGO: kopia wykazu (oryginal nietkniety), per-zeinr scoping, filtr kolumny (rysuj/rysuj ZUBEHOR), kolumny wynikowe ZA OSTATNIA UZYWANA kolumna (max_column+1 - nie nachodza na formuly NAZWA; bug fix 07.07). Dodaje status(semafor barwiony)+plik_dxf+technologia(+faza)+skala+X-DXF/Y-DXF+Abmess+formuly x=x,y/y=x,y+UWAGI(kontrola-wymiaru)+powod. Uzyty na 61_7227 (50) i 38_1847_ZUBEHOR (292)"
+    plik: produkcja/kontrola/marker_wykazu.py
+    test: ""
 
   - nazwa: licznik-konturow
     typ: aplikacja
