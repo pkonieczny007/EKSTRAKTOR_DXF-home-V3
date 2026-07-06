@@ -57,6 +57,8 @@ python testy\test_sprawdz_folder.py   # sprawdzanie AI folderu: nakladka per poz
 python testy\test_przeglad.py         # przeglad czlowieka: galeria V3 (semafor finalny, probka zielonych) + worklist werdyktow -> etykiety
 python testy\test_metryka.py          # metryka zaufania: odsetek do przegladu, rozklad semaforow, trend (replace po data+zeinr)
 python testy\test_adnotacje.py        # kategoria 4: babelek nr pozycji -> klaster (filtr wymiarem), hint gespiegelt
+python testy\test_korpus.py           # kategoria 5: dopasowanie do archiwum po sygnaturze (n_circ/n_geom); rozjazd=niepewny
+python testy\test_typowanie.py        # typowanie: profil_rysunku (progi+podpowiedzi; typ DOSTRAJA nie ogranicza silnikow)
 python testy\wszystkie.py             # WSZYSTKIE testy jedna komenda (--szybko pomija wolne)
 
 # EKSTRAKCJA V3 (etap 3: DEFAULT wielowariantowosc W-A/W-B/W-C + ocena; --parytet = sam W-B)

@@ -5,7 +5,17 @@
 # Pola typu:
 #   opis        - co to za konwencja (dla czlowieka)
 #   wykrywanie  - heurystyki (uzywa produkcja/typowanie.py); "reczne" = tylko czlowiek
-#   silniki     - ktore silniki wariantow uruchamiac (klucze z config/warianty.yaml)
+#   silniki     - INFORMACYJNE (DECYZJA usera 06.07: typ NIE ogranicza silnikow -
+#                 zawsze W-A/W-B/W-C; pole zostaje jako dokumentacja, pipeline go nie czyta)
+#   profil      - PROGI + PODPOWIEDZI pipeline'u (typowanie.profil_rysunku); typ DOSTRAJA,
+#                 nie ogranicza. Pola profilu (wszystkie opcjonalne, default nizej):
+#                   geom_kolory          [lista] kolory geometrii (podpowiedz sweep/W-C)
+#                   giecie_kolor         kolor linii giecia (magenta=6)
+#                   warstwa_pozycyjna    bool - czy sa warstwy 1NN
+#                   spodziewane_lustra   bool - typ czesto ma pary P/L (druga poz = lustro)
+#                   cechy_odseparowane   bool - ryzyko zgubienia wysp (sweep/W-C wazny; 54_4867)
+#                   prog_sweep_delta     prog flagi sweepu (default 1)
+#                   uwaga                tekst-podpowiedz dla AI/czlowieka
 #   przyklady   - folder z rysunkami referencyjnymi (zasady/przyklady/<typ>/)
 #   reguly      - plik regul (zasady/reguly/<typ>.md) - [plan] dopoki nie istnieje
 #   status      - dziala / szkic / plan
@@ -18,6 +28,11 @@ typy:
     wykrywanie:
       warstwy_regex: '^1\d\d$'
     silniki: [w_b]
+    profil:
+      warstwa_pozycyjna: true
+      spodziewane_lustra: true      # druga poz o tych samych wymiarach = para P/L
+      giecie_kolor: 6
+      uwaga: "Druga pozycja o tych samych wymiarach = lustro (domyslnie odbijaj)"
     przyklady: zasady/przyklady/lantek_1nn/
     status: dziala          # obsluguje kategoria struktura (technika A)
 
@@ -27,6 +42,11 @@ typy:
       kolory_geometrii: [2, 3, 6]
       jedna_warstwa_dominujaca: true
     silniki: [w_b, w_c]     # w_c = region+warstwa (cechy odseparowane - lekcja 54_4867)
+    profil:
+      geom_kolory: [2, 7]           # kontur bywa na 2 LUB 7 (SL40061302=col2) - nie zakladac 7
+      giecie_kolor: 6
+      cechy_odseparowane: true      # wyspy/sloty gina w klastrze - sweep/W-C obowiazkowe
+      uwaga: "Geometria bywa na kolorze 2/4/7 - nie zakladac 7; wyspy odseparowane"
     przyklady: zasady/przyklady/sbm_kolorowa/
     status: dziala          # kategoria struktura (technika B); w_c do integracji
 
@@ -35,6 +55,10 @@ typy:
     wykrywanie:
       insert_only: true
     silniki: [w_b]
+    profil:
+      bloki_insert: true            # rozbic virtual_entities PRZED czymkolwiek
+      giecie_kolor: 6
+      uwaga: "Rozbic bloki INSERT przed ekstrakcja (robi Geometria/wspolne.py)"
     przyklady: zasady/przyklady/niemiecka_blokowa/
     status: dziala          # rozbicie blokow w Geometria (wspolne.py)
 
@@ -56,5 +80,9 @@ typy:
     opis: "Typ nieokreslony - pelny przebieg kategorii z ostroznymi progami"
     wykrywanie: fallback
     silniki: [w_b]
+    profil:
+      giecie_kolor: 6
+      prog_sweep_delta: 1
+      uwaga: "Typ nieokreslony - ostrozne progi, pelny sweep, 100% flag do ogledzin"
     przyklady: zasady/przyklady/domyslny/
     status: dziala

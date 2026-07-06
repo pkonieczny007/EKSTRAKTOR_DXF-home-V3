@@ -40,6 +40,14 @@ def main(argv):
             typy = typowanie.okresl_typy(rysunek)
             opis = ", ".join(f"{t['typ']} ({t['pewnosc']}, {t['powod']})" for t in typy)
             print(f"[V3] typowanie: {opis}", flush=True)
+            # profil = progi + podpowiedzi (typ DOSTRAJA, NIE ogranicza silnikow -
+            # zawsze W-A/W-B/W-C; decyzja usera 06.07). Informacyjnie do ogledzin.
+            prof = typowanie.profil_rysunku(rysunek, typy=typy)
+            podp = [f"{k}={prof[k]}" for k in ("geom_kolory", "spodziewane_lustra",
+                    "cechy_odseparowane") if prof.get(k) not in (None, False)]
+            if podp or prof.get("uwaga"):
+                print(f"[V3] profil: {', '.join(podp)}"
+                      f"{'  | ' + prof['uwaga'] if prof.get('uwaga') else ''}", flush=True)
         except Exception as e:  # typowanie jest informacyjne - nie blokuje produkcji
             print(f"[V3] typowanie pominiete ({e})", flush=True)
 

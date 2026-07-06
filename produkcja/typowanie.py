@@ -17,9 +17,24 @@ from collections import Counter
 from pathlib import Path
 
 import ezdxf
+import yaml
 
 WARSTWA_POZYCYJNA = re.compile(r"^1\d\d$")   # Lantek: 101 -> pozycja 1
 KOLORY_SBM = {2, 3, 6}                        # kontur=2, wymiary=3, giecie=6
+
+BAZA_TYPOW = Path(__file__).resolve().parent.parent / "config" / "typy.yaml"
+
+# profil bazowy (DECYZJA usera 06.07: typ DOSTRAJA progi/podpowiedzi, NIE ogranicza
+# silnikow - zawsze W-A/W-B/W-C). Typ nadpisuje tylko pola, ktore zna.
+PROFIL_DOMYSLNY = {
+    "geom_kolory": None,           # None = auto-wykrycie warstwy/koloru geometrii
+    "giecie_kolor": 6,             # magenta
+    "warstwa_pozycyjna": False,
+    "spodziewane_lustra": False,
+    "cechy_odseparowane": False,
+    "prog_sweep_delta": 1,
+    "uwaga": "",
+}
 
 
 def okresl_typy(dxf_path, min_encji=10):
@@ -70,12 +85,44 @@ def okresl_typy(dxf_path, min_encji=10):
     return typy
 
 
+def _wczytaj_baze_typow():
+    try:
+        return (yaml.safe_load(BAZA_TYPOW.read_text(encoding="utf-8")) or {}).get("typy", {})
+    except Exception:
+        return {}
+
+
+def profil_rysunku(dxf_path, typy=None):
+    """Profil pipeline'u (progi + podpowiedzi) dla rysunku - scala profile wykrytych
+    typow na PROFIL_DOMYSLNY. Typ DOSTRAJA, nie ogranicza silnikow (decyzja usera).
+    Najpewniejszy typ wygrywa konflikty. Zwraca dict + pole 'typy' (lista nazw).
+    typy: mozna podac gotowa liste (bez ponownego czytania dxf)."""
+    if typy is None:
+        typy = okresl_typy(dxf_path)
+    baza = _wczytaj_baze_typow()
+    profil = dict(PROFIL_DOMYSLNY)
+    # okresl_typy: najpewniejszy pierwszy -> stosuj od najmniej pewnego, by
+    # najpewniejszy nadpisal na koncu (wygrywa konflikty)
+    for t in reversed(typy):
+        p = (baza.get(t["typ"]) or {}).get("profil") or {}
+        profil.update({k: v for k, v in p.items() if v is not None})
+    profil["typy"] = [t["typ"] for t in typy]
+    return profil
+
+
 def main(argv):
     if len(argv) != 1:
         print(__doc__)
         return 2
-    for t in okresl_typy(Path(argv[0])):
+    typy = okresl_typy(Path(argv[0]))
+    for t in typy:
         print(f"{t['typ']:<22} pewnosc={t['pewnosc']:<8} {t['powod']}")
+    prof = profil_rysunku(argv[0], typy=typy)
+    print("\nprofil (progi + podpowiedzi, typ DOSTRAJA nie ogranicza silnikow):")
+    for k in ("geom_kolory", "giecie_kolor", "warstwa_pozycyjna", "spodziewane_lustra",
+              "cechy_odseparowane", "prog_sweep_delta", "uwaga"):
+        if prof.get(k) not in (None, "", False):
+            print(f"  {k}: {prof[k]}")
     return 0
 
 

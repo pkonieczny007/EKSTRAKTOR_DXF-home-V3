@@ -84,6 +84,16 @@ narzedzia:
       - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\dxf-audyt"
     test: "python zarzadzanie\\audyt.py"
 
+  - nazwa: dxf-ekstrakcja
+    typ: skill
+    wersja: "1.0"
+    status: dziala
+    opis: "PELNY tor produkcyjny V3 na zleceniu: recall wiedzy -> typowanie(profil) -> orkiestrator (W-A/W-B/W-C+ocena) -> raport+wykaz -> sprawdz AI (nakladki+flagi 100%) -> galeria czlowieka -> metryka. NOWY skill V3 OBOK /wyciagnij-dxf (V1/V2) - nie podmienia (decyzja usera 06.07). Zrodlo skills/dxf-ekstrakcja/ - DEPLOY operatora jeszcze nie wykonany"
+    instalacje:
+      - "~/.claude/skills/dxf-ekstrakcja"
+      - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\dxf-ekstrakcja"
+    test: "python testy\\benchmark_v3.py"
+
   # ---------- APLIKACJE: SILNIKI ----------
   - nazwa: silnik-w-a
     typ: aplikacja
@@ -128,11 +138,11 @@ narzedzia:
 
   - nazwa: typowanie
     typ: aplikacja
-    wersja: "0.1"
+    wersja: "0.2"
     status: dziala
-    opis: "Heurystyki typu rysunku z config/typy.yaml (lantek_1nn / sbm_kolorowa / niemiecka_blokowa); kalibracja = etap 4"
+    opis: "Heurystyki typu rysunku z config/typy.yaml (lantek_1nn / sbm_kolorowa / niemiecka_blokowa). v0.2: profil_rysunku() = PROGI + PODPOWIEDZI (geom_kolory, giecie_kolor, spodziewane_lustra, cechy_odseparowane, prog_sweep_delta, uwaga) scalane z typow na PROFIL_DOMYSLNY. DECYZJA usera 06.07: typ DOSTRAJA, NIE ogranicza silnikow (zawsze W-A/W-B/W-C). Orkiestrator surface'uje profil informacyjnie. Test test_typowanie (20)"
     plik: produkcja/typowanie.py
-    test: ""
+    test: "python testy\\test_typowanie.py"
 
   - nazwa: ocena-wariantow
     typ: aplikacja
@@ -237,6 +247,14 @@ narzedzia:
     opis: "Kategoria 4 szukania (wtyczka W-B): po ADNOTACJACH tekstowych. Babelek numeru pozycji (TEXT/MTEXT == nr LUB 'Pos./Poz. N') -> najblizszy klaster -> kandydat, ale TYLKO gdy wymiar klastra pasuje do wykazu (match_scale = filtr przed zlym babelkiem/tekstem wymiarowym). Hint 'gespiegelt/mirrored/lustro' -> kandydat NIEPEWNY. Priorytet 2/pewnosc 0.55. WLACZONA:false w config/kategorie.yaml (opt-in) - wlaczenie po benchmarku (zasada 10); zaladuj_kategorie pomija wlaczona:false przed importem (0 ryzyka dla W-B)"
     plik: produkcja/silniki/v2/kategorie/adnotacje.py
     test: "python testy\\test_adnotacje.py"
+
+  - nazwa: kategoria-korpus
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "Kategoria 5 szukania (wtyczka W-B): po ARCHIWUM/KORPUSIE. Gdy korpus (sygnatury.csv: zeinr;posn;dim_max;dim_min;n_circ;n_geom) ma wpis (po kluczu albo wymiarach), sposrod klastrow pasujacych wymiarem wybiera ten o zgodnej SYGNATURZE (n_circ dedup + n_geom + ratio, LEKKA bez shapely). Zgodna->pewnosc 0.7; rozjazd sygnatury (wymiar OK, inna liczba otworow)->NIEPEWNY 0.35. Brak korpusu/wpisu->[] (nie zgaduje). WLACZONA:false (opt-in) - wlaczenie po zasileniu korpusu realnymi danymi + benchmark"
+    plik: produkcja/silniki/v2/kategorie/korpus.py
+    test: "python testy\\test_korpus.py"
 
   - nazwa: destylacja
     typ: aplikacja

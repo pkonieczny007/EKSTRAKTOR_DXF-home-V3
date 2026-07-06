@@ -123,13 +123,13 @@ z powodem; benchmark V3 ≥ V2.** ✅ — ETAP 3 DOMKNIĘTY (raport.py zamyka pr
    Reużywa `raport.scal` + `_index_raporty` + galeria V2 (render czarne tło) +
    `werdykty` — spina, nie dubluje. Test `test_przeglad.py` (26, stub render).
    Smoke realny SL10478356: 14🟢, próbka 5 → 3 do przeglądu (21% — metryka zaufania).
-3. ⬜ Kalibracja typowania na `zasady/przyklady/<typ>/` (rysunki referencyjne
-   z realnych zleceń); typ wybiera silniki i progi (przestaje być informacyjny).
-   **DO DECYZJI CZŁOWIEKA (kolizja z „zawsze 3 warianty"):** czy typ ma OGRANICZAĆ
-   zestaw silników (sprzeczne z wyborem „zawsze W-A/W-B/W-C"), czy tylko dostrajać
-   PROGI bramek i podpowiedzi? Kalibracja wymaga też sk-uratowanych przykładów
-   referencyjnych per typ (decyzja/etykieta człowieka) — dlatego NIE robimy jej
-   autonomicznie. Reszta etapu 4 (p1 driver+werdykty AI, p2 galeria) gotowa.
+3. 🔨 Typowanie z profilem. **DECYZJA usera 06.07: typ DOSTRAJA PROGI + PODPOWIEDZI,
+   NIE ogranicza silników** (zawsze W-A/W-B/W-C). ✅ (06.07.2026) `typowanie.profil_rysunku()`
+   + `config/typy.yaml` pole `profil` (geom_kolory, giecie_kolor, spodziewane_lustra,
+   cechy_odseparowane, prog_sweep_delta, uwaga) scalane z typów na `PROFIL_DOMYSLNY`;
+   orkiestrator surface'uje profil informacyjnie (0 zmiany silników). Test
+   `test_typowanie.py` (20). ⬜ ZOSTAJE: kalibracja detekcji na `zasady/przyklady/<typ>/`
+   (przykłady referencyjne = kuratela człowieka) + konsumpcja progów w bramkach (benchmark).
 
 **Kryterium: jedno zlecenie przechodzi pełny przepływ (pipeline → AI → człowiek →
 etykiety) i raport zaufania pokazuje % pozycji wymagających przeglądu.** — infra
@@ -140,12 +140,13 @@ gotowa (pipeline→AI→galeria→etykiety→metryka); brakuje realnego zlecenia
 1. ⬜ Destylacja po każdym zleceniu: korpus+etykiety → wnioski → (akceptacja człowieka)
    `kontekst/wiedza/` + golden + ewentualna propozycja reguły/typu (`zasady/propozycje/`).
    Skrypt `nauka/destylacja.py` GOTOWY; uruchomienie wymaga etykiet (Twój przegląd).
-2. 🔨 Skille: ⬜ `/wyciagnij-dxf` → orkiestrator V3 (**DO POTWIERDZENIA — podmiana
-   działającego skilla produkcyjnego, nie robimy autonomicznie**); ✅ (06.07.2026)
-   źródła nowych skilli napisane w `skills/`: `/dxf-testy`, `/dxf-sprawdz`,
-   `/dxf-przeglad`, `/dxf-zasada`, `/dxf-nauka`, `/dxf-audyt` — każdy = procedura na
-   istniejących skryptach (bez powielania kodu), wpisy w rejestrze (v1.0).
-   ⬜ DEPLOY do `~/.claude/skills` + SecondBrain = krok operatora (audyt zgłasza głośno).
+2. 🔨 Skille: **DECYZJA usera 06.07: `/wyciagnij-dxf` (V1/V2) NIE podmieniany — nowy
+   skill V3 OBOK.** ✅ (06.07.2026) `skills/dxf-ekstrakcja/` = pełny tor V3 (recall →
+   typowanie → orkiestrator → raport → sprawdź AI → galeria → metryka). ✅ (06.07.2026)
+   źródła skilli pomocniczych: `/dxf-testy`, `/dxf-sprawdz`, `/dxf-przeglad`,
+   `/dxf-zasada`, `/dxf-nauka`, `/dxf-audyt` — procedury na istniejących skryptach,
+   wpisy w rejestrze (v1.0). ✅ `zarzadzanie/deploy_skilli.py` (dry-run, `--wykonaj`).
+   ⬜ DEPLOY (operator, jedna komenda: `deploy_skilli.py --wykonaj`) = audyt zgłasza głośno.
 
 **Kryterium: po 3 zleceniach — co najmniej 3 nowe reguły w wiedzy, każda z testem golden;
 skille zainstalowane i w rejestrze (audyt PASS).**
@@ -166,7 +167,12 @@ skille zainstalowane i w rejestrze (audyt PASS).**
    Test `test_adnotacje.py` (11). **`wlaczona:false` (opt-in)** — włączenie po benchmarku
    (zasada 10); `zaladuj_kategorie` pomija `false` przed importem → 0 ryzyka dla W-B
    (testy_v2 35/35, regresja 43/43 potwierdzone). Decyzja usera: typ dostraja PROGI, nie
-   ogranicza silników. ⬜ kategoria 5 (korpus), 6 (człowiek).
+   ogranicza silników.
+   ✅ (06.07.2026) **Kategoria 5 (korpus)** — `kategorie/korpus.py`: dopasowanie do
+   archiwum po SYGNATURZE (n_circ dedup + n_geom + ratio, lekka bez shapely); zgodna →
+   pewność 0.7, rozjazd sygnatury (wymiar OK, inna liczba otworów) → NIEPEWNY 0.35; brak
+   korpusu/wpisu → [] (nie zgaduje). `wlaczona:false` (opt-in — włączenie po zasileniu
+   korpusu realnymi danymi + benchmark). Test `test_korpus.py` (11). ⬜ kategoria 6 (człowiek).
 
 **Kryterium: metryka liczona automatycznie; 3 kolejne zlecenia bez błędu na laserze
 i z malejącym odsetkiem przeglądu.**
