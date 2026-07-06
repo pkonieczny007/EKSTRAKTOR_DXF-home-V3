@@ -16,6 +16,12 @@ POKRYCIE (miary auto-flagi, FLAGER - decyduja OCZY, zasada 6):
   pokrycie_zrodla = % dlugosci geometrii zrodla pokrytej wynikiem (BRAK CECHY -> spada;
                     to sygnal kompletnosci: <97% -> MOZLIWY BRAK, ogledziny render)
 
+ZAKRESLANIE BRAKOW (automatyczne): fragmenty zrodla DALEJ niz tol od wyniku sa
+klasteryzowane w skupiska (_braki_skupiska); kazde skupisko powyzej progu szumu
+= jaskrawy czerwony przerywany OKRAG na renderze + wpis w braki_bboxy (bbox +
+dl_niepokryta, malejaco). Czlowiek/AI widzi w 1 s GDZIE jest brak, nie tylko ZE
+pokrycie spadlo. Skupiska ponizej progu = jitter, odfiltrowane (licznik w align).
+
 Rdzen (alignment + miary) zaprojektowany i zwalidowany wizualnie przez fable-advisor,
 zweryfikowany renderem i wpiety przez orkiestratora (etap 2 PLAN.md). Reuzywa
 sweep.kontury_regionu_zrodla (wybor regionu, warstwa geometrii) + bramka 5.
@@ -39,6 +45,7 @@ from ezdxf import path as ezpath
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.patches import Circle as MplCircle
 
 from shapely.geometry import LineString, MultiLineString
 from shapely.ops import unary_union
@@ -54,6 +61,12 @@ PROG_POKRYCIE_ZRODLA = 97.0    # < prog -> MOZLIWY BRAK CECHY (sygnal kompletnos
 PROG_POKRYCIE_WYNIK = 90.0     # < prog -> zly alignment / obca geometria
 PROG_ANIZOTROPIA = 3.0         # % - bbox-fit anizotropowy -> zly region
 PROG_ODCH_SKALA = 5.0          # % - s_fit vs 1/scale z raportu
+# filtr szumu skupisk braku: skupisko o dl niepokrytej < PROG_SZUM_BRAKU*tol = jitter
+# dopasowania, NIE brak cechy. Pomiar (golden SL10596945, skala 1/5, tol=0.461):
+# jitter/kikuty naroznikow 1.26-1.39*tol, najmniejsza realna cecha (pol fasoli r=7)
+# 7.4*tol, caly otwor 6.5 -> 17.7*tol. Prog 3.0 = 2.2x nad szumem, 2.5x pod cecha.
+PROG_SZUM_BRAKU = 3.0          # x tol - min dlugosc niepokryta skupiska braku
+EPS_KLASTRA = 2.0              # x tol - promien laczenia fragmentow w skupisko
 
 
 def _flatten(e, sagitta):
@@ -94,6 +107,46 @@ def _coverage(target_polys, reference_union, tol):
     if total <= 0:
         return 0.0
     return 100.0 * tgt.intersection(reference_union.buffer(tol)).length / total
+
+
+def _braki_skupiska(src_geom, res_union, tol):
+    """Skupiska geometrii ZRODLA niepokrytej wynikiem = kandydaci na BRAK CECHY.
+
+    Dual _coverage: difference kazdej polilinii zrodla z buforem tol wokol wyniku
+    daje fragmenty NIEPOKRYTE; klasteryzacja buforem EPS_KLASTRA*tol scala je w
+    skupiska (cala zgubiona fasola = JEDNO skupisko); filtr szumu odrzuca skupiska
+    o dl < PROG_SZUM_BRAKU*tol (jitter dopasowania, kikuty na krawedzi).
+    Zwraca (braki, n_odfiltrowane); braki = [dict(bbox=(x1,y1,x2,y2),
+    dl_niepokryta=...)] posortowane MALEJACO po dl (najwieksze roznice pierwsze,
+    zasada 6). FLAGER - decyduja OCZY na renderze, nie sama liczba.
+    """
+    if res_union is None or not src_geom:
+        return [], 0
+    buf = res_union.buffer(tol)
+    frags = []
+    for pts in src_geom:
+        if len(pts) < 2:
+            continue
+        d = LineString(pts).difference(buf)
+        for g in getattr(d, "geoms", [d]):
+            if g.geom_type == "LineString" and g.length > 0:
+                frags.append(g)
+    if not frags:
+        return [], 0
+    blobs = unary_union([f.buffer(EPS_KLASTRA * tol) for f in frags])
+    braki, odfiltrowane = [], 0
+    for blob in getattr(blobs, "geoms", [blobs]):
+        mine = [f for f in frags if f.intersects(blob)]
+        dl = sum(f.length for f in mine)
+        if dl < PROG_SZUM_BRAKU * tol:
+            odfiltrowane += 1
+            continue
+        xs1, ys1, xs2, ys2 = zip(*(f.bounds for f in mine))
+        braki.append(dict(bbox=(round(min(xs1), 2), round(min(ys1), 2),
+                                round(max(xs2), 2), round(max(ys2), 2)),
+                          dl_niepokryta=round(dl, 2)))
+    braki.sort(key=lambda b: -b["dl_niepokryta"])
+    return braki, odfiltrowane
 
 
 def _transform(polys, s, res_cx, res_cy, src_cx, src_cy, mirror_x):
@@ -175,6 +228,7 @@ def nakladka(wynik_dxf, zrodlo_conv, box, out_png, scale=None, lustro=False):
 
     res_t_geom, res_t_bend = [], []
     pokrycie = pokrycie_zrodla = 0.0
+    braki = []
     if ok_align:
         sx1, sy1, sx2, sy2 = src_fit_bb
         rx1, ry1, rx2, ry2 = res_bb
@@ -239,6 +293,15 @@ def nakladka(wynik_dxf, zrodlo_conv, box, out_png, scale=None, lustro=False):
                              "- w zrodle jest geometria BEZ czerwonej nakladki = MOZLIWY "
                              "BRAK CECHY w wyniku - OGLADAC render (zasada 6)")
 
+            # skupiska braku: geometria zrodla ktorej wynik NIE pokrywa,
+            # zakreslane na renderze jaskrawym okregiem (czlowiek/AI widzi GDZIE)
+            braki, braki_szum = _braki_skupiska(src_geom, res_union, tol)
+            align["braki_szum_odfiltrowane"] = braki_szum
+            if braki:
+                uwagi.append(f"BRAK CECHY: {len(braki)} skupisk zrodla bez pokrycia "
+                             f"wynikiem (najwieksze dl={braki[0]['dl_niepokryta']}) - "
+                             "ZAKRESLONE czerwonym okregiem, OGLADAC (zasada 6)")
+
     # ------------------------------- RENDER -------------------------------
     x1, y1, x2, y2 = box
     w, h = x2 - x1, y2 - y1
@@ -261,6 +324,15 @@ def nakladka(wynik_dxf, zrodlo_conv, box, out_png, scale=None, lustro=False):
     draw(res_t_bend, color="#ff9020", lw=2.2, alpha=0.55)    # giecie wyniku: pomaranczowy
     ax.plot([x1, x2, x2, x1, x1], [y1, y1, y2, y2, y1],
             color="#3060ff", lw=0.8, ls="--", alpha=0.7)     # ramka regionu
+    # ZAKRESLENIA BRAKOW: jaskrawy PELNY (bez alpha) przerywany okrag - odcina sie
+    # od polprzezroczystej nakladki wyniku; zorder wysoki (na wierzchu wszystkiego)
+    tol_r = align.get("tol_pokrycia", 0.3)
+    for b in braki:
+        bx1, by1, bx2, by2 = b["bbox"]
+        rr = 0.5 * math.hypot(bx2 - bx1, by2 - by1) + 3.0 * tol_r
+        ax.add_patch(MplCircle(((bx1 + bx2) / 2.0, (by1 + by2) / 2.0), rr,
+                               fill=False, ec="#ff3030", lw=3.0,
+                               ls=(0, (5, 3)), zorder=12))
 
     m = 0.04 * max(w, h)
     ax.set_xlim(x1 - m, x2 + m)
@@ -269,7 +341,8 @@ def nakladka(wynik_dxf, zrodlo_conv, box, out_png, scale=None, lustro=False):
              f"s_fit={align.get('s_fit', float('nan')):.4f}"
              f" (raport {align.get('s_raport', float('nan')):.4f})"
              f"  lustro={align.get('lustro_uzyte', '?')}"
-             f"  pokrycie_wyniku={pokrycie:.1f}%  pokrycie_zrodla={pokrycie_zrodla:.1f}%")
+             f"  pokrycie_wyniku={pokrycie:.1f}%  pokrycie_zrodla={pokrycie_zrodla:.1f}%"
+             f"  braki={len(braki)}")
     fig.text(0.02, 0.965, tytul, color="white", fontsize=9, va="top", family="monospace")
     if uwagi:
         fig.text(0.02, 0.905, "\n".join("! " + u[:110] for u in uwagi[:3]),
@@ -278,7 +351,8 @@ def nakladka(wynik_dxf, zrodlo_conv, box, out_png, scale=None, lustro=False):
     plt.close(fig)
 
     return dict(align_info=align, pokrycie=round(pokrycie, 1),
-                pokrycie_zrodla=round(pokrycie_zrodla, 1), uwagi=uwagi, png=str(out_png))
+                pokrycie_zrodla=round(pokrycie_zrodla, 1), braki_bboxy=braki,
+                uwagi=uwagi, png=str(out_png))
 
 
 def main(argv):

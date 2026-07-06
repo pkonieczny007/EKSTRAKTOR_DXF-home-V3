@@ -36,43 +36,53 @@ narzedzia:
 
   - nazwa: dxf-sprawdz
     typ: skill
-    wersja: "0"
-    status: plan
-    opis: "Sprawdzanie AI folderu wynikow: nakladki, ogledziny 100% flag, czerwone zakreslenia, werdykty (PLAN etap 4)"
-    instalacje: []
-    test: ""
+    wersja: "1.0"
+    status: dziala
+    opis: "Sprawdzanie AI folderu wynikow: nakladka per pozycja -> pokrycie_zrodla -> flaga kompletnosci (100% ogledzin, zasada 6), auto-obnizenie zielony->zolty; opcja --werdykty-ai. Zrodlo skills/dxf-sprawdz/ - DEPLOY operatora jeszcze nie wykonany"
+    instalacje:
+      - "~/.claude/skills/dxf-sprawdz"
+      - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\dxf-sprawdz"
+    test: "python testy\\test_sprawdz_folder.py"
 
   - nazwa: dxf-przeglad
     typ: skill
-    wersja: "0"
-    status: plan
-    opis: "Sesja przegladu czlowieka: galeria -> werdykty -> etykiety -> golden (PLAN etap 4)"
-    instalacje: []
-    test: ""
+    wersja: "1.0"
+    status: dziala
+    opis: "Sesja przegladu czlowieka: galeria kafelkow (wynik+zrodlo+nakladka, semafor finalny, probka zielonych) -> worklist werdyktow -> import do nauka/etykiety (BLAD->golden). Zrodlo skills/dxf-przeglad/ - DEPLOY operatora jeszcze nie wykonany"
+    instalacje:
+      - "~/.claude/skills/dxf-przeglad"
+      - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\dxf-przeglad"
+    test: "python testy\\test_przeglad.py"
 
   - nazwa: dxf-zasada
     typ: skill
-    wersja: "0"
-    status: plan
-    opis: "Obserwacja/przypadek -> propozycja reguly w formacie zasady/propozycje/ (PLAN etap 5)"
-    instalacje: []
+    wersja: "1.0"
+    status: dziala
+    opis: "Obserwacja/przypadek -> propozycja reguly/typu w formacie zasady/propozycje/ + sciezka awansu (golden+regresja+benchmark+czlowiek). Zrodlo skills/dxf-zasada/ - DEPLOY operatora jeszcze nie wykonany"
+    instalacje:
+      - "~/.claude/skills/dxf-zasada"
+      - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\dxf-zasada"
     test: ""
 
   - nazwa: dxf-nauka
     typ: skill
-    wersja: "0"
-    status: plan
-    opis: "Destylacja korpus+etykiety -> wnioski -> (za akceptacja) kontekst/wiedza/ (PLAN etap 5)"
-    instalacje: []
-    test: ""
+    wersja: "1.0"
+    status: dziala
+    opis: "Destylacja korpus+etykiety -> szkic wnioskow -> (za akceptacja czlowieka) kontekst/wiedza/ + golden + propozycja reguly. Zrodlo skills/dxf-nauka/ - DEPLOY operatora jeszcze nie wykonany"
+    instalacje:
+      - "~/.claude/skills/dxf-nauka"
+      - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\dxf-nauka"
+    test: "python nauka\\destylacja.py"
 
   - nazwa: dxf-audyt
     typ: skill
-    wersja: "0"
-    status: plan
-    opis: "Audyt tego rejestru (opakowanie zarzadzanie/audyt.py) (PLAN etap 6)"
-    instalacje: []
-    test: ""
+    wersja: "1.0"
+    status: dziala
+    opis: "Audyt rejestru (zarzadzanie/audyt.py) + metryka zaufania zlecenia (zarzadzanie/metryka.py). Zrodlo skills/dxf-audyt/ - DEPLOY operatora jeszcze nie wykonany"
+    instalacje:
+      - "~/.claude/skills/dxf-audyt"
+      - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\dxf-audyt"
+    test: "python zarzadzanie\\audyt.py"
 
   # ---------- APLIKACJE: SILNIKI ----------
   - nazwa: silnik-w-a
@@ -142,11 +152,11 @@ narzedzia:
 
   - nazwa: raport-zlecenia
     typ: aplikacja
-    wersja: "0.1"
+    wersja: "1.0"
     status: dziala
-    opis: "Podsumowanie semaforow z *_raport.csv; zapis do wykazu = etap 3-4"
+    opis: "Scalenie zlecenia (etap 3-4): merge ocena.csv (wielowariant) LUB raport.csv (parytet) + raport silnika + REALNY pomiar wyjsciowego DXF -> <zeinr>_podsumowanie.csv; wymiar_dxf vs Abmess (bramka 1 tol=max(1mm,0.2%)) = uwagi_wymiar; technologia G/GS/S/brak z rysunku (Schweissgruppe+giecie). Zapis statusow do KOPII wykazu (--wykaz): status kolorem, plik_dxf, technologia, skala, wymiar_dxf_x/y, uwagi_wymiar, uwagi; ORYGINAL NIETKNIETY (pulapka formul)"
     plik: produkcja/raport.py
-    test: ""
+    test: "python testy\\test_raport.py"
 
   - nazwa: bramki
     typ: aplikacja
@@ -182,11 +192,27 @@ narzedzia:
 
   - nazwa: nakladka
     typ: aplikacja
-    wersja: "1.0"
+    wersja: "1.1"
     status: dziala
-    opis: "Nakladka wynik-na-zrodlo (strategia #1 kompletnosci): wynik czerwony na regionie zrodla, czarne tlo; alignment bbox-fit + auto-lustro P/L; pokrycie_zrodla<97% = MOZLIWY BRAK CECHY (geometria bez czerwieni). FLAGER - decyduja oczy. Reuzywa sweep+bramka5"
+    opis: "Nakladka wynik-na-zrodlo (strategia #1 kompletnosci): wynik czerwony na regionie zrodla, czarne tlo; alignment bbox-fit + auto-lustro P/L; pokrycie_zrodla<97% = MOZLIWY BRAK CECHY. v1.1: CZERWONE ZAKRESLENIA BRAKOW (_braki_skupiska, dual _coverage: difference zrodla z buforem wyniku -> klastry niepokrytej geometrii, filtr szumu PROG_SZUM_BRAKU=3*tol) -> jaskrawy okrag na renderze + pole braki_bboxy (bbox+dl, malejaco); 0 falszywych na pelnych wzorcach (zmierzone). FLAGER - decyduja oczy. Reuzywa sweep+bramka5"
     plik: sprawdzanie/ai/nakladka.py
     test: "python testy\\test_nakladka.py"
+
+  - nazwa: sprawdz-folder
+    typ: aplikacja
+    wersja: "1.2"
+    status: dziala
+    opis: "SPRAWDZANIE AI folderu (etap 4): dla kazdej pozycji nakladka wynik-na-zrodlo -> pokrycie_zrodla + skupiska braku (braki_bboxy) -> flaga kompletnosci (100% flag = ogledziny, zasada 6). Reuzywa raport.scal + raport._index_raporty (box+skala+lustro). AUTO-OBNIZA zielony->zolty gdy pokrycie<97 LUB wykryto skupisko braku (v1.2: czulsze - mala cecha zgubiona przy pokryciu>=97 tez flaguje). lustro -> box blizniaka. --werdykty-ai: WATPLIWOSC (zrodlo=ai) dla flag do nauka/etykiety (RECORD, NIE zamkniecie - czlowiek oglada, zasada 6)"
+    plik: sprawdzanie/ai/sprawdz_folder.py
+    test: "python testy\\test_sprawdz_folder.py"
+
+  - nazwa: przeglad-czlowieka
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "PRZEGLAD CZLOWIEKA (etap 4): galeria kafelkow V3 wynik+zrodlo(zoom,ramka)+nakladka; semafor FINALNY (obnizenie AI ma pierwszenstwo, zasada 5); kolejnosc 🔴->🟡->🟢; 🔴/🟡 obowiazkowo + 🟢 PROBKA (co N-ty, reszta zliczona). Worklist <zeinr>_werdykty_do_wypelnienia.csv -> czlowiek wpisuje OK/BLAD -> --werdykty importuje do nauka/etykiety (werdykty.py; BLAD->golden PRZED naprawa). Reuzywa raport.scal + _index_raporty + galeria V2 + werdykty; nie dubluje logiki"
+    plik: sprawdzanie/czlowiek/przeglad.py
+    test: "python testy\\test_przeglad.py"
 
   - nazwa: werdykty
     typ: aplikacja
@@ -219,3 +245,11 @@ narzedzia:
     opis: "Audyt tego rejestru vs rzeczywistosc (pliki, instalacje skilli, testy zdefiniowane)"
     plik: zarzadzanie/audyt.py
     test: "python zarzadzanie\\audyt.py"
+
+  - nazwa: metryka-zaufania
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "METRYKA ZAUFANIA (etap 6, glowna miara sukcesu): per zlecenie liczy rozklad semaforow FINALNYCH (obnizenie AI ma pierwszenstwo), ODSETEK DO PRZEGLADU (nie-zielone/wszystkie), flagi AI, ile AI obnizylo, werdykty czlowieka OK/BLAD z etykiet dopasowane po zeinr. Dopisuje wiersz do testy/raporty/metryka_zaufania.csv (trend - odsetek MA maleC; replace po data+zeinr). Czyste CSV, bez ezdxf. czas/pozycje + bledy-na-laser = brak danych (uczciwie)"
+    plik: zarzadzanie/metryka.py
+    test: "python testy\\test_metryka.py"

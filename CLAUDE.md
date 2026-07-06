@@ -51,6 +51,10 @@ python testy\test_sweep_54_4867.py    # sweep lapie realne braki 54_4867 (safety
 python testy\test_gr4.py              # golden 38_1847 gr4: 2 realne bledy (zwodnicza zielen)
 python testy\test_wc.py               # silnik W-C region+warstwa: odtwarza kompletnosc, OCS
 python testy\test_warianty.py         # wielowariantowosc: score_variants + warianty_pozycji (W-C>W-A)
+python testy\test_raport.py           # raport: merge ocena+raport+pomiar DXF, uwagi_wymiar, technologia, writeback do KOPII wykazu
+python testy\test_sprawdz_folder.py   # sprawdzanie AI folderu: nakladka per pozycja -> flaga kompletnosci, auto-obnizenie zielony->zolty
+python testy\test_przeglad.py         # przeglad czlowieka: galeria V3 (semafor finalny, probka zielonych) + worklist werdyktow -> etykiety
+python testy\test_metryka.py          # metryka zaufania: odsetek do przegladu, rozklad semaforow, trend (replace po data+zeinr)
 python testy\wszystkie.py             # WSZYSTKIE testy jedna komenda (--szybko pomija wolne)
 
 # EKSTRAKCJA V3 (etap 3: DEFAULT wielowariantowosc W-A/W-B/W-C + ocena; --parytet = sam W-B)
@@ -62,12 +66,16 @@ python produkcja\typowanie.py <rysunek_conv.dxf>          # typ rysunku (baza: c
 python produkcja\kontrola\bramki.py --lista                # rejestr 10 bramek
 python produkcja\kontrola\bramki.py <plik.dxf> <dmax> <dmin>   # kontrola post-hoc (8 bramek W-B)
 python produkcja\ocena.py <A.dxf> <B.dxf>                  # zgodnosc wariantow (bramka 10, CLI)
-python produkcja\raport.py <folder_wynikow>                # podsumowanie semaforow
+python produkcja\raport.py <folder_wynikow> [<conv.dxf>] [--wykaz <wykaz.xlsx>]  # scal ocen+raportow+pomiar DXF -> podsumowanie.csv; --wykaz=statusy do KOPII (oryginal nietkniety)
 python produkcja\silniki\v2\galeria.py <folder_wynikow> [--rysunki <folder>]  # kafelki
 
-# sprawdzanie + nauka
+# sprawdzanie + nauka + metryka
+python sprawdzanie\ai\sprawdz_folder.py <folder_wynikow> <zrodlo_conv.dxf> [--werdykty-ai]  # nakladki + flagi kompletnosci (100% flag; auto-obniza zielony->zolty); --werdykty-ai=WATPLIWOSC zrodlo=ai do etykiet
+python sprawdzanie\czlowiek\przeglad.py <folder_wynikow> [--rysunki F] [--probka N]  # galeria przegladu + worklist werdyktow
+python sprawdzanie\czlowiek\przeglad.py --werdykty <wypelniony.csv>  # import OK/BLAD -> nauka/etykiety
 python sprawdzanie\czlowiek\werdykty.py <plik> OK|BLAD [kategoria] [--kto ai|czlowiek]
 python nauka\destylacja.py                                 # korpus+etykiety -> szkic wnioskow
+python zarzadzanie\metryka.py <folder_wynikow> [--bez-trendu]  # metryka zaufania: odsetek do przegladu, semafory, trend (glowna miara sukcesu)
 
 # render PNG — ZAWSZE przez ten skrypt (czarne tlo!)
 python testy\pretesty\_render_png.py "<folder>/*.dxf"

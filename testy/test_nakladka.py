@@ -3,10 +3,12 @@
 
 Walidacja WIZUALNA zrobiona przez fable-advisor + orkiestratora (PNG obejrzane);
 tu test LICZBOWY progow, ktore te obrazy potwierdzily:
-  1. pelny wzorzec p3: pokrycie_zrodla wysokie, lustro_uzyte False, s_fit ~ 1/scale;
-  2. uszkodzony (usuniete otwory+fasola): pokrycie_zrodla < 97 + uwaga MOZLIWY BRAK CECHY;
-  3. lustro p4: lustro_uzyte True;
-  4. pusty wynik: uwaga WYNIK PUSTY + pokrycie 0.
+  1. pelny wzorzec p3: pokrycie_zrodla wysokie, lustro_uzyte False, s_fit ~ 1/scale,
+     ZERO zakreslen braku (braki_bboxy==[]);
+  2. uszkodzony (usuniete otwory+fasola): pokrycie_zrodla < 97 + uwaga MOZLIWY BRAK CECHY
+     + skupiska braku wykryte (braki_bboxy malejaco, najwieksze realne);
+  3. lustro p4: lustro_uzyte True, ZERO falszywych zakreslen (braki_bboxy==[]);
+  4. pusty wynik: uwaga WYNIK PUSTY + pokrycie 0 + braki_bboxy==[].
 PNG musi powstac (>0 B).
 
 Uzycie:  python testy\\test_nakladka.py     (exit 0 = PASS)
@@ -66,8 +68,12 @@ def main():
         check("pelny PNG", (tmp / "pelny.png").stat().st_size > 0)
         check("pelny bez falszywej flagi braku", not _has(r["uwagi"], "MOZLIWY BRAK"),
               f"uwagi={r['uwagi']}")
+        check("pelny 0 zakreslen braku", r["braki_bboxy"] == [], f"braki={r['braki_bboxy']}")
+        check("pelny 0 szumu braku", r["align_info"].get("braki_szum_odfiltrowane") == 0,
+              f"szum={r['align_info'].get('braki_szum_odfiltrowane')}")
         print(f"  pelny:     pokrycie={r['pokrycie']} pokrycie_zrodla={r['pokrycie_zrodla']} "
-              f"lustro={r['align_info']['lustro_uzyte']} s_fit={r['align_info']['s_fit']:.4f}")
+              f"lustro={r['align_info']['lustro_uzyte']} s_fit={r['align_info']['s_fit']:.4f} "
+              f"braki={len(r['braki_bboxy'])}")
 
         # (2) uszkodzony: usun okregi + luki (fasole) -> BRAK cechy wykryty
         doc = ezdxf.readfile(WZ)
@@ -82,8 +88,17 @@ def main():
               f"pokrycie_zrodla={r2['pokrycie_zrodla']}")
         check("uszkodzony flaga braku", _has(r2["uwagi"], "MOZLIWY BRAK"),
               f"uwagi={r2['uwagi']}")
+        check("uszkodzony braki wykryte", len(r2["braki_bboxy"]) >= 2,
+              f"braki={len(r2['braki_bboxy'])}")
+        check("uszkodzony braki malejaco", all(
+            r2["braki_bboxy"][i]["dl_niepokryta"] >= r2["braki_bboxy"][i + 1]["dl_niepokryta"]
+            for i in range(len(r2["braki_bboxy"]) - 1)), f"braki={r2['braki_bboxy']}")
+        check("uszkodzony najwieksze skupisko realne",
+              r2["braki_bboxy"][0]["dl_niepokryta"] >= 15,
+              f"dl={r2['braki_bboxy'][0]['dl_niepokryta']}")
         print(f"  uszkodzony: pokrycie_zrodla={r2['pokrycie_zrodla']} "
-              f"(flaga MOZLIWY BRAK: {_has(r2['uwagi'], 'MOZLIWY BRAK')})")
+              f"(flaga MOZLIWY BRAK: {_has(r2['uwagi'], 'MOZLIWY BRAK')}) "
+              f"braki={len(r2['braki_bboxy'])} najw={r2['braki_bboxy'][0]['dl_niepokryta']}")
 
         # (3) lustro p4 na regionie p3 -> auto-lustro
         if WZ_LUSTRO.exists():
@@ -93,6 +108,8 @@ def main():
                   f"lustro_uzyte={r3['align_info'].get('lustro_uzyte')} "
                   f"norm={r3['align_info'].get('pokrycie_normal')} "
                   f"mir={r3['align_info'].get('pokrycie_lustro')}")
+            check("lustro 0 falszywych zakreslen", r3["braki_bboxy"] == [],
+                  f"braki={r3['braki_bboxy']}")
             print(f"  lustro p4: lustro_uzyte={r3['align_info'].get('lustro_uzyte')} "
                   f"(norm={r3['align_info'].get('pokrycie_normal')}% "
                   f"mir={r3['align_info'].get('pokrycie_lustro')}%)")
@@ -103,6 +120,7 @@ def main():
         r4 = nakladka(str(pusty), str(ZR), BOX, str(tmp / "pusty.png"), scale=SCALE)
         check("pusty flaga", _has(r4["uwagi"], "WYNIK PUSTY"), f"uwagi={r4['uwagi']}")
         check("pusty pokrycie 0", r4["pokrycie"] == 0.0, f"pokrycie={r4['pokrycie']}")
+        check("pusty 0 zakreslen", r4["braki_bboxy"] == [], f"braki={r4['braki_bboxy']}")
         check("pusty PNG mimo braku", (tmp / "pusty.png").stat().st_size > 0)
         print(f"  pusty:     pokrycie={r4['pokrycie']} (flaga WYNIK PUSTY: "
               f"{_has(r4['uwagi'], 'WYNIK PUSTY')})")

@@ -33,10 +33,10 @@ HERE = Path(__file__).parent
 ROOT = HERE.parent
 
 # rdzenne testy bez prefiksu test_ - trzeba je dopisac recznie (reszta z glob test_*.py)
-NAZWANE = ["regresja", "testy_v2", "benchmark_v2", "regresja_znane_bledy"]
+NAZWANE = ["regresja", "testy_v2", "benchmark_v2", "benchmark_v3", "regresja_znane_bledy"]
 
 # testy wolne (uruchamiaja silnik przez subprocess / benchmark 36 plikow x2) -> --szybko je pomija
-SKIP_SZYBKO = {"benchmark_v2", "test_sweep_54_4867", "test_gr4"}
+SKIP_SZYBKO = {"benchmark_v2", "benchmark_v3", "test_sweep_54_4867", "test_gr4"}
 
 TIMEOUT_S = 1800  # 30 min - twardy limit na pojedynczy test, zeby runner nie wisial
 

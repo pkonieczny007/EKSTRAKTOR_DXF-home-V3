@@ -78,40 +78,87 @@ zero regresji.** ✅ — potwierdzone na REALNEJ partii produkcyjnej.
 4. ✅ (06.07.2026) Refinement lustra: pozycja `LUSTRO z poz. N` → zwycięzca = **odbicie
    zwycięzcy bliźniaka** (zachowuje kompletność twina; naprawił 2 regresje benchmarku +
    p4 golden z W-B/3 na LUSTRO/4). Bliźniaki asymetryczne → zawsze 🟡 do potwierdzenia.
-5. ⬜ `produkcja/raport.py`: scalenie raportów + oceny; zapis statusów do wykazu (etap 3-4).
+5. ✅ (06.07.2026) `produkcja/raport.py` (v1.0): scalenie raportów + oceny w
+   `<zeinr>_podsumowanie.csv` + zapis statusów do KOPII wykazu (`--wykaz`). Merge
+   ocena.csv (wielowariant) / raport.csv (parytet) + raport silnika + **realny pomiar
+   wyjściowego DXF** (ezdxf.extents) vs Abmess (bramka 1, tol=max(1 mm,0.2%)) →
+   `uwagi_wymiar`; `technologia` G/GS/S/brak z rysunku (Schweissgruppe + gięcie).
+   **Writeback do KOPII `<wykaz>_WYNIKI.xlsx` — oryginał klienta NIETKNIĘTY** (pułapka
+   formuł NAZWA/ZAKUPY: openpyxl.save kasuje cache; Excel przelicza kopię przy
+   otwarciu, wymiary kontrolne z raportu). Status barwiony semaforem, obcy Zeinr
+   pomijany. Test `test_raport.py` (44 sprawdzenia: tolerancja, technologia, merge,
+   writeback+nietykalność oryginału).
 
 **Kryterium: na golden zgodność ≥2 silników; każda rozbieżność widoczna w raporcie
-z powodem; benchmark V3 ≥ V2.** ✅ — spełnione (raport.py = domknięcie w etapie 4).
+z powodem; benchmark V3 ≥ V2.** ✅ — ETAP 3 DOMKNIĘTY (raport.py zamyka przepływ do wykazu).
 
-## Etap 4 — sprawdzanie AI + człowiek, typowanie z bazy ⬜
+## Etap 4 — sprawdzanie AI + człowiek, typowanie z bazy 🔨 (w toku)
 
-1. Procedura flag w praktyce: sprawdzanie AI (nakładki, zakreślenia na czerwono,
-   werdykt z powodem) → `nauka/etykiety/` (źródło=ai).
-2. Galeria + przegląd człowieka: werdykty (`sprawdzanie/czlowiek/werdykty.py`),
-   próbkowanie zielonych, każdy BŁĄD → golden PRZED naprawą.
-3. Kalibracja typowania na `zasady/przyklady/<typ>/` (rysunki referencyjne
+1. ✅ (06.07.2026) Procedura flag AI — DRIVER: `sprawdzanie/ai/sprawdz_folder.py`
+   (v1.0). Dla KAŻDEJ pozycji nakładka wynik-na-źródło → `pokrycie_zrodla` → flaga
+   kompletności; 100% flag → PNG do oględzin (zasada 6). Reużywa `raport.scal`
+   (semafor+plik) + `raport._index_raporty` (box+skala+lustro). **AUTO-OBNIŻA
+   🟢→🟡** gdy `pokrycie_zrodla<97%` (zasada 5, tylko obniża); lustro → box
+   bliźniaka (`--lustro`). Wyjście: `sprawdzanie_ai/PNG` + `<zeinr>_sprawdzanie_ai.csv`.
+   Werdykty dopisuje człowiek/AI po oględzinach (`werdykty.py`) — driver NIE zgaduje
+   (zasada 6). Test `test_sprawdz_folder.py` (25, stub nakładki: flaga/obniżenie/
+   lustro/brak-pliku/werdykty-ai). Smoke realny SL10478356: 14 poz, 0 fałszywych flag.
+   ✅ (06.07.2026) **Auto-werdykty AI**: `--werdykty-ai` dopisuje `WATPLIWOSC` (źródło=ai)
+   dla flag do `nauka/etykiety/` — RECORD wątpliwości AI, NIE zamknięcie flagi (człowiek
+   nadal ogląda, zasada 6). ✅ (06.07.2026) **Czerwone zakreślenia braków** (nakladka.py
+   v1.1, rdzeń fable-advisor, zweryfikowany niezależnie): `_braki_skupiska` = dual
+   `_coverage` (difference źródła z buforem wyniku → klastry niepokrytej geometrii, filtr
+   szumu 3·tol) → jaskrawy czerwony okrąg na renderze + pole `braki_bboxy` (bbox+dł,
+   malejąco — największe braki pierwsze, zasada 6). Zmierzone na golden: pełny wzorzec
+   0 zakreśleń, bez 2 CIRCLE → 2 skupiska dokładnie w środkach źródłowych okręgów. Test
+   `test_nakladka.py` (20). `sprawdz_folder` v1.2: skupisko braku flaguje TAKŻE przy
+   pokryciu ≥97% (mała cecha zgubiona, czulsze niż sam próg %). **PUNKT 1 DOMKNIĘTY.**
+2. ✅ (06.07.2026) Galeria + przegląd człowieka: `sprawdzanie/czlowiek/przeglad.py`
+   (v1.0). Kafelki V3 wynik + źródło (zoom + ramka skąd-wycięto) + **nakładka**;
+   semafor FINALNY = obniżenie AI ma pierwszeństwo (zasada 5); kolejność 🔴→🟡→🟢
+   (najpierw decyzje); 🔴/🟡 obowiązkowo + 🟢 **PRÓBKA** co N-ty (reszta zliczona,
+   nie renderowana — czas przeglądu). Worklist `<zeinr>_werdykty_do_wypelnienia.csv`
+   → człowiek wpisuje OK/BŁĄD → `--werdykty` importuje do `nauka/etykiety/`
+   (`werdykty.py`; każdy BŁĄD → przypomnienie golden PRZED naprawą, zasada 11).
+   Reużywa `raport.scal` + `_index_raporty` + galeria V2 (render czarne tło) +
+   `werdykty` — spina, nie dubluje. Test `test_przeglad.py` (26, stub render).
+   Smoke realny SL10478356: 14🟢, próbka 5 → 3 do przeglądu (21% — metryka zaufania).
+3. ⬜ Kalibracja typowania na `zasady/przyklady/<typ>/` (rysunki referencyjne
    z realnych zleceń); typ wybiera silniki i progi (przestaje być informacyjny).
+   **DO DECYZJI CZŁOWIEKA (kolizja z „zawsze 3 warianty"):** czy typ ma OGRANICZAĆ
+   zestaw silników (sprzeczne z wyborem „zawsze W-A/W-B/W-C"), czy tylko dostrajać
+   PROGI bramek i podpowiedzi? Kalibracja wymaga też sk-uratowanych przykładów
+   referencyjnych per typ (decyzja/etykieta człowieka) — dlatego NIE robimy jej
+   autonomicznie. Reszta etapu 4 (p1 driver+werdykty AI, p2 galeria) gotowa.
 
 **Kryterium: jedno zlecenie przechodzi pełny przepływ (pipeline → AI → człowiek →
-etykiety) i raport zaufania pokazuje % pozycji wymagających przeglądu.**
+etykiety) i raport zaufania pokazuje % pozycji wymagających przeglądu.** — infra
+gotowa (pipeline→AI→galeria→etykiety→metryka); brakuje realnego zlecenia + typowania.
 
-## Etap 5 — nauka + skille ⬜
+## Etap 5 — nauka + skille 🔨 (w toku)
 
-1. Destylacja po każdym zleceniu: korpus+etykiety → wnioski → (akceptacja człowieka)
+1. ⬜ Destylacja po każdym zleceniu: korpus+etykiety → wnioski → (akceptacja człowieka)
    `kontekst/wiedza/` + golden + ewentualna propozycja reguły/typu (`zasady/propozycje/`).
-2. Skille: `/wyciagnij-dxf` podmieniony na orkiestrator V3 (recall wiedzy przed ekstrakcją);
-   nowe: `/dxf-testy`, `/dxf-sprawdz`, `/dxf-przeglad`, `/dxf-zasada`, `/dxf-nauka`.
-   Źródła w `skills/`, deploy do `~/.claude/skills` + SecondBrain, wpisy w rejestrze.
+   Skrypt `nauka/destylacja.py` GOTOWY; uruchomienie wymaga etykiet (Twój przegląd).
+2. 🔨 Skille: ⬜ `/wyciagnij-dxf` → orkiestrator V3 (**DO POTWIERDZENIA — podmiana
+   działającego skilla produkcyjnego, nie robimy autonomicznie**); ✅ (06.07.2026)
+   źródła nowych skilli napisane w `skills/`: `/dxf-testy`, `/dxf-sprawdz`,
+   `/dxf-przeglad`, `/dxf-zasada`, `/dxf-nauka`, `/dxf-audyt` — każdy = procedura na
+   istniejących skryptach (bez powielania kodu), wpisy w rejestrze (v1.0).
+   ⬜ DEPLOY do `~/.claude/skills` + SecondBrain = krok operatora (audyt zgłasza głośno).
 
 **Kryterium: po 3 zleceniach — co najmniej 3 nowe reguły w wiedzy, każda z testem golden;
 skille zainstalowane i w rejestrze (audyt PASS).**
 
-## Etap 6 — zarządzanie i metryka zaufania ⬜
+## Etap 6 — zarządzanie i metryka zaufania 🔨 (w toku)
 
-1. `/dxf-audyt` + audyt w rytmie (każda sesja zaczyna od `python zarzadzanie\audyt.py`).
-2. Metryka zaufania per zlecenie w `testy/raporty/`: % pozycji do przeglądu,
-   czas sprawdzania/pozycję, błędy na laser (cel: 0). Trend musi SPADAĆ.
-3. Iteracje: kategorie 4–6 (adnotacje, korpus, człowiek) wg `config/kategorie.yaml`.
+1. ✅ `/dxf-audyt` (źródło) + audyt w rytmie (każda sesja zaczyna od `python zarzadzanie\audyt.py`).
+2. ✅ (06.07.2026) Metryka zaufania (`zarzadzanie/metryka.py` v1.0): % pozycji do przeglądu,
+   rozkład semaforów FINALNYCH, flagi AI, werdykty człowieka; trend w
+   `testy/raporty/metryka_zaufania.csv` (replace po data+zeinr, MA maleć). Test
+   `test_metryka.py` (14). ⬜ czas sprawdzania/pozycję + błędy NA LASER (uciekłe) —
+   wymagają instrumentacji przeglądu i feedbacku po wypaleniu (brak danych — uczciwie).
+3. ⬜ Iteracje: kategorie 4–6 (adnotacje, korpus, człowiek) wg `config/kategorie.yaml`.
 
 **Kryterium: metryka liczona automatycznie; 3 kolejne zlecenia bez błędu na laserze
 i z malejącym odsetkiem przeglądu.**
