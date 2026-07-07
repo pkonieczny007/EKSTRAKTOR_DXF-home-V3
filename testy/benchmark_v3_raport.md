@@ -4,7 +4,7 @@ V3 (warianty W-A/W-B/W-C + ocena) vs V2 (sam W-B), te same rysunki co regresja.
 V3 >= V2 gdy zwyciezca nie gubi konturow, nie oddaje otwartego konturu i
 produkuje kazda pozycje (bramki 2+5). Poprawa (wiecej konturow) = OK.
 
-- pozycje: **42**, V3 lepsze: **0**, rowne: **36**, regresje: **0**
+- pozycje: **42**, V3 lepsze: **1**, rowne: **35**, regresje: **0**
 - werdykt: **V3 >= V2 (PASS)**
 
 | rysunek | poz | W-B interior | V3 interior | werdykt |
@@ -49,7 +49,7 @@ produkuje kazda pozycje (bramki 2+5). Poprawa (wiecej konturow) = OK.
 | SL10578806 | 51 | - | - | V2 brak - pomijam |
 | SL10578806 | 55 | - | - | V2 brak - pomijam |
 | SL40885240 | 1 | 7 | 7 | rowne |
-| SL10584235 | 1 | 7 | 7 | rowne |
+| SL10584235 | 1 | 7 | 8 | LEPSZE (+1, zw=W-C) |
 | SL10584244 | 1 | 7 | 7 | rowne |
 
 Uruchomienie: `python testy\benchmark_v3.py` (kod wyjscia 0 = PASS).

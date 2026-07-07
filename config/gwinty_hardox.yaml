@@ -1,0 +1,29 @@
+# Tablica srednic palenia gwintow na materialach trudnoscieralnych
+# (Hardox / HB400 / HB450 / XAR / RAEX).
+#
+# DOCELOWO: config/gwinty_hardox.yaml
+#
+# WARTOSCI WPISUJE OPERATOR (zasada zelazna 1: nie zgadujemy srednic).
+# null = brak wartosci => gwint zostaje NIETKNIETY (luk + okrag w pliku),
+# a pozycja dostaje status minimum ZOLTY z powodem "MX bez wartosci w tablicy".
+#
+# Format po uzupelnieniu (PRZYKLAD, nie wartosc produkcyjna):
+#   M6: 6.6      # gwint M6 -> okrag powiekszony do o6.6 mm, kolor CZERWONY
+#
+M3: null
+M4: null
+M5: null
+M6: null
+M8: null
+M10: null
+M12: 10.6      # POTWIERDZONE (operator 2026-07-08): trudnoscieralne M12 -> o10.6 mm, kolor CZERWONY
+M14: null
+M16: null
+M18: null
+M20: null
+M22: null
+M24: null
+
+# UWAGA: dla blach ZWYKLYCH (S235, S355) M12 ~ 10.2 (wiercenie pod gwint) - operator
+# jeszcze POTWIERDZI; NIE stosowane tutaj (ta tablica dotyczy TYLKO trudnoscieralnych,
+# a zwykle blachy zachowuja gwint jak jest: luk+okrag, opis M w wykazie - zasada gwint-okrag-luk).

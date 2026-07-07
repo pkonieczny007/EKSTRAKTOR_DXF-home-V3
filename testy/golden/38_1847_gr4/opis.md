@@ -24,7 +24,7 @@ bo sweep jest narzedziem GRUPOWYM (domkniecie zlecenia, zasada 7). Testuje go
 | SL40851344_p2 | 4 | 4 | 0 | 🟢 | 4 okregi narozne |
 | SL40851345_p1 | 63 | 63 | 0 | 🟢 | blizniak 344 |
 | SL40851345_p2 | 4 | 4 | 0 | 🟢 | blizniak 344 |
-| **SL40852200_p1** | 5 | 3 | 2 | 🔴 | **OTWARTY KONTUR** (bramka 2) + strata slotow (5→3) |
+| **SL40852200_p1** | 5 | 3 | 2 | 🟡 | **STRATA slotow (5→3)** delta=2; dawna „czerwien" (otwarty kontur) to byl luk gwintu M10 — falszywa, po wpieciu gwintu do bramki 5 znika |
 | **SL40052110_p1** | 12 | 4 | 8 | 🟡 | **ZWODNICZA ZIELEN**: strata 8 cech mimo domknietego konturu i wymiaru co do mm |
 
 ## Znane bledy ktore lapie (rdzen tego golden)
@@ -35,10 +35,14 @@ bo sweep jest narzedziem GRUPOWYM (domkniecie zlecenia, zasada 7). Testuje go
    cyklomatyczny (dostal 🟡→traktowany jako OK). Sweep liczy region zrodla przez
    polygonize = **12 konturow wewnetrznych**, wiec delta=8 → 🟡 flaga. Dowod, ze
    **samokontrola wyniku nie wystarcza** — sweep-vs-zrodlo jest obowiazkowy (zasada 7).
-2. **SL40852200_p1 — otwarty kontur.** Seria SL4 gieta z kolnierzem, geometria rozbita
-   na warstwy (kolor 7 + 3); tryb „bez warstw" zgubil sloty (5→3) i zostawil otwarty
-   kontur. Bramka 5 flaguje NIEDOMKNIETE (cuts=1) → 🔴, nie na laser. Naprawa
-   region+warstwa tez nie domyka → czlowiek (ANALIZA_gr4.md).
+2. **SL40852200_p1 — strata slotow (5→3), delta=2 → 🟡.** Seria SL4 gieta z kolnierzem;
+   tryb „bez warstw" zgubil 2 sloty. HISTORYCZNIE flagowany 🔴 „otwarty kontur", ale
+   ten JEDYNY otwarty koniec (cuts=1) to byl luk gwintu M10 (~270 st, wspolsrodkowy z
+   okregiem wiercenia) — **FALSZYWA czerwien** (gwint-okrag-luk-dimension.md; test_gwint
+   golden bramka2 2→0). Po wpieciu gwintu do bramki 5 (bilans_konturow wyklucza luki
+   gwintu PRZED polygonize: `thread_skipped=1`, cuts 1→0) plik SAM w sobie jest CZYSTY
+   (jak 052110) — realna strata 2 slotow widac dopiero vs zrodlo (sweep) → 🟡. Pozycja
+   i tak idzie do ogledzin 100% (zasada 6), wiec zero utraty bezpieczenstwa vs dawne 🔴.
 3. **Zero falszywych flag na 8 poprawnych** — w tym perforacja SBM 63=63 (duza siatka),
    sloty, okregi. Straznik przed regresja typu „sweep zaczyna flagowac poprawne".
 

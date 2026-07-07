@@ -64,6 +64,8 @@ python testy\wszystkie.py             # WSZYSTKIE testy jedna komenda (--szybko 
 # EKSTRAKCJA V3 (etap 3: DEFAULT wielowariantowosc W-A/W-B/W-C + ocena; --parytet = sam W-B)
 python produkcja\orkiestrator.py <rysunek_conv.dxf> <wykaz.xlsx> <folder_wynikow> [--parytet]
 python produkcja\warianty.py <rysunek_conv.dxf> <wykaz.xlsx> <folder_wynikow>  # bezposrednio warianty+ocena
+# JEDNA komenda na zlecenie (P0.1): orkiestrator -> raport -> sprawdz AI -> sweep -> galeria -> metryka; pominiecia GLOSNO
+python produkcja\przebieg.py <conv.dxf|folder_z_conv> <wykaz.xlsx> <folder_wynikow> [--parytet] [--bez-galerii] [--bez-metryki]
 
 # narzedzia pipeline
 python produkcja\typowanie.py <rysunek_conv.dxf>          # typ rysunku (baza: config/typy.yaml)

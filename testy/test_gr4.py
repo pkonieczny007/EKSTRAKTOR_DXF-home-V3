@@ -11,8 +11,15 @@ Sprawdza, ze sweep (bramka 5 / bilans_konturow) na PRAWDZIWEJ partii:
     (zrodlo zasmiecone 176 wymiarami zmylilo kontrole liczbowa) - dowod, ze
     samokontrola wyniku NIE wystarcza, sweep-vs-zrodlo jest obowiazkowy.
 
-  SL40852200_p1 = OTWARTY KONTUR + strata: silnik zgubil sloty (5->3) i zostawil
-    otwarty kontur -> bramka 2 (NIEDOMKNIETE) -> CZERWONY (nie na laser).
+  SL40852200_p1 = STRATA cech: silnik zgubil sloty (5->3) -> delta=2 -> ZOLTY.
+    HISTORYCZNIE flagowany CZERWONY jako "otwarty kontur", ale ten JEDYNY otwarty
+    koniec to byl luk gwintu M10 (~270 st, wspolsrodkowy z okregiem wiercenia) -
+    FALSZYWA czerwien (gwint-okrag-luk-dimension.md; test_gwint golden bramka2 2->0).
+    Po wpieciu gwintu do bramki 5 (bilans_konturow wyklucza luki gwintu PRZED
+    polygonize) luk gwintu NIE liczy sie do NIEDOMKNIETE (thread_skipped=1, cuts 1->0),
+    wiec plik SAM w sobie jest teraz CZYSTY - jak 052110. Realna strata 2 slotow
+    (delta=2) zostaje zlapana przez sweep-vs-zrodlo jako ZOLTY (pozycja i tak idzie
+    do ogledzin 100%, zasada 6 - zero utraty bezpieczenstwa).
 
   8 poprawnych pozycji (846315, 851203 x3, 851344 x2, 851345 x2) = ZIELONY, delta=0
     -> ZERO falszywych flag (perforacja SBM 63=63, sloty, okregi domkniete).
@@ -58,7 +65,7 @@ OCZEK = {
     ("SL40851344", "2"): dict(zrodlo=4,  wynik=4,  delta=0, semafor="zielony"),
     ("SL40851345", "1"): dict(zrodlo=63, wynik=63, delta=0, semafor="zielony"),
     ("SL40851345", "2"): dict(zrodlo=4,  wynik=4,  delta=0, semafor="zielony"),
-    ("SL40852200", "1"): dict(zrodlo=5,  wynik=3,  delta=2, semafor="czerwony"),  # otwarty
+    ("SL40852200", "1"): dict(zrodlo=5,  wynik=3,  delta=2, semafor="zolty"),     # strata 2 slotow (dawna "czerwien" = luk gwintu M10 = falszywa, gwint w bramce 5)
     ("SL40052110", "1"): dict(zrodlo=12, wynik=4,  delta=8, semafor="zolty"),     # zwodnicza zielen
 }
 
@@ -90,8 +97,10 @@ def test_sweep_grupy():
     licz = {s: sum(1 for w in wiersze if w["semafor"] == s)
             for s in ("zielony", "zolty", "czerwony")}
     check("8 zielonych", licz["zielony"] == 8, f"zielony={licz['zielony']}")
-    check("1 zolty", licz["zolty"] == 1, f"zolty={licz['zolty']}")
-    check("1 czerwony", licz["czerwony"] == 1, f"czerwony={licz['czerwony']}")
+    check("2 zolte (052110 zwodnicza zielen + 852200 strata slotow)",
+          licz["zolty"] == 2, f"zolty={licz['zolty']}")
+    check("0 czerwonych (dawna czerwien 852200 to luk gwintu M10 - gwint w bramce 5)",
+          licz["czerwony"] == 0, f"czerwony={licz['czerwony']}")
     print(f"  bilans grupy: {licz['zielony']}🟢 / {licz['zolty']}🟡 / {licz['czerwony']}🔴")
 
     # HEADLINE: zwodnicza zielen 052110 wykryta wlasnie przez sweep-vs-zrodlo
@@ -100,10 +109,15 @@ def test_sweep_grupy():
           f"delta={w52['delta']}")
     check("052110 tryb warstwa_geom", w52["tryb"] == "warstwa_geom", f"tryb={w52['tryb']}")
 
-    # 852200 czerwony z powodu OTWARTEGO konturu (bramka 2), nie samej delty
+    # 852200 ZOLTY z powodu STRATY 2 slotow (delta), NIE otwartego konturu:
+    # dawny "otwarty kontur" to byl luk gwintu M10 (~270 st) falszywie flagowany
+    # NIEDOMKNIETE; po wpieciu gwintu do bramki 5 znika (gwint-okrag-luk-dimension.md).
     w22 = by[("SL40852200", "1")]
-    check("852200 powod = otwarty kontur", "otwarty kontur" in w22["powod"],
-          f"powod={w22['powod'][:60]}")
+    check("852200 powod = zgubione kontury (strata slotow)",
+          "zgubione kontury" in w22["powod"], f"powod={w22['powod'][:70]}")
+    check("852200 BEZ falszywej czerwieni z luku gwintu (brak NIEDOMKNIETE/otwarty)",
+          "NIEDOMKNIETE" not in w22["powod"] and "otwarty kontur" not in w22["powod"],
+          f"powod={w22['powod'][:70]}")
     return wiersze
 
 
@@ -119,12 +133,18 @@ def test_bramka5_wprost():
     print(f"  SL40052110_p1: interior={n52} flags={d52['flags'] or 'BRAK'} "
           f"-> sam plik wyglada OK, strate widac TYLKO vs zrodlo (=12)")
 
-    # 852200: otwarty kontur -> bramka 5 sama flaguje NIEDOMKNIETE (twarda bramka 2)
+    # 852200: po wpieciu gwintu (PATCH 1) luk gwintu M10 NIE flaguje juz NIEDOMKNIETE
+    # -> plik sam w sobie wyglada OK (interior=3, bez flag, thread_skipped=1), TAK JAK
+    # 052110. Strate 2 slotow widac TYLKO vs zrodlo (sweep) - drugi dowod tej samej tezy.
     n22, d22 = count_interior_contours_shapely(_load("wynikow/SL40852200/SL40852200_p1.dxf"))
     otwarty = any(fl.startswith("NIEDOMKNIETE") for fl in d22["flags"])
-    check("852200 NIEDOMKNIETE", otwarty, f"flags={d22['flags']}")
+    check("852200 BEZ NIEDOMKNIETE (luk gwintu M10 wykluczony z bramki 5)",
+          not otwarty, f"flags={d22['flags']}")
+    check("852200 thread_skipped=1 (luk gwintu M10 rozpoznany u zrodla)",
+          d22.get("thread_skipped") == 1, f"thread_skipped={d22.get('thread_skipped')}")
     print(f"  SL40852200_p1: interior={n22} NIEDOMKNIETE={otwarty} "
-          f"-> otwarty kontur = nie na laser (bramka 2)")
+          f"thread_skipped={d22.get('thread_skipped')} -> luk gwintu M10 to NIE otwarty "
+          f"kontur; strate 2 slotow widac TYLKO vs zrodlo (sweep)")
 
 
 def main():

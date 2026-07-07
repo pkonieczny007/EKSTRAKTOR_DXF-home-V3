@@ -43,6 +43,15 @@ import shapely
 from shapely.geometry import LineString, Polygon
 from shapely.ops import unary_union, polygonize_full
 
+# Luki gwintu (okrag wiercenia + wspolsrodkowy luk ~270 st) NIE sa konturem ani
+# otwartym koncem (bramka 2) - wykluczamy je z zupy segmentow PRZED polygonize,
+# jak kolor 6/GIECIE (gwint-okrag-luk-dimension.md; material NIEISTOTNY). gwint.py
+# lezy w tym samym katalogu (kontrola), zawsze na sys.path przy imporcie tego modulu.
+try:
+    from gwint import thread_arcs as _thread_arcs
+except ImportError:  # zaimportowane jako pakiet produkcja.kontrola
+    from produkcja.kontrola.gwint import thread_arcs as _thread_arcs
+
 GEOM_TYPES = {"LINE", "ARC", "CIRCLE", "LWPOLYLINE", "POLYLINE", "SPLINE", "ELLIPSE"}
 EPS_CLOSED = 1e-9          # start==end -> ring zamkniety, nie snapujemy koncowek
 
@@ -100,7 +109,15 @@ def count_interior_contours_shapely(msp, layers=None, sagitta=0.1, snap_tol=0.1,
     open_chains = []
     closed_rings = []
     skipped_bend = 0
+    skipped_thread = 0
     failed = []
+
+    # uchwyty lukow gwintu (~270 st, wspolsrodkowe z mniejszym okregiem) - dangle
+    # luku gwintu przestaje generowac flage NIEDOMKNIETE u ZRODLA (nie post-filtrem).
+    try:
+        thread_handles, _thr = _thread_arcs(msp)
+    except Exception:
+        thread_handles = frozenset()
 
     for e in msp:
         t = e.dxftype()
@@ -110,6 +127,9 @@ def count_interior_contours_shapely(msp, layers=None, sagitta=0.1, snap_tol=0.1,
             continue
         if _is_bend(e):
             skipped_bend += 1
+            continue
+        if getattr(e.dxf, "handle", None) in thread_handles:
+            skipped_thread += 1
             continue
         if t == "CIRCLE":
             c = e.ocs().to_wcs(e.dxf.center)      # OCS->WCS (lustro!)
@@ -163,7 +183,8 @@ def count_interior_contours_shapely(msp, layers=None, sagitta=0.1, snap_tol=0.1,
     if not lines:
         return 0, dict(interior=0, faces=0, outer=0, dangles=0, cuts=0, invalid=0,
                        circles_raw=circles_raw, circles_dedup=circles_dedup,
-                       bend_skipped=skipped_bend, failed=failed, flags=["brak geometrii"])
+                       bend_skipped=skipped_bend, thread_skipped=skipped_thread,
+                       failed=failed, flags=["brak geometrii"])
 
     merged = unary_union(lines)
     polys, dangles, cuts, invalids = polygonize_full([merged])
@@ -194,7 +215,8 @@ def count_interior_contours_shapely(msp, layers=None, sagitta=0.1, snap_tol=0.1,
     detale = dict(interior=n_interior, faces=len(faces), outer=n_outer,
                   dangles=n_dangles, cuts=n_cuts, invalid=n_invalid,
                   circles_raw=circles_raw, circles_dedup=circles_dedup,
-                  bend_skipped=skipped_bend, failed=failed, flags=flags)
+                  bend_skipped=skipped_bend, thread_skipped=skipped_thread,
+                  failed=failed, flags=flags)
     return n_interior, detale
 
 

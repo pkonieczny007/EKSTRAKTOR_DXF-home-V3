@@ -19,6 +19,11 @@ silniki:
     modul: produkcja/silniki/region_warstwa.py
     opis: "region+warstwa: WSZYSTKIE encje warstwy geometrii w bbox widoku (cechy odseparowane nie wypadaja) - sprawdzony recznie na 54_4867 (8 pozycji)"
     status: narzedzie        # dziala jako narzedzie CLI; integracja jako silnik = PLAN etap 2
+  w_d:
+    modul: produkcja/silniki/wd_dwutorowy.py
+    opis: "dwutorowy: TOR 1 bbox hojnie (box+skala z zewnatrz jak W-C) -> TOR 2 czyszczenie konturem zewn. + kolorem bazowym z krawedzi. Root-fix na otwory INNEGO koloru (UWAGA-pass) i cechy odseparowane (point-in-polygon). Boj 41_2050: wygral z V3 na SL40062903 (otwory col4)."
+    status: propozycja       # opt-in czwarty wariant (bramka 10: 4. glos); awans = benchmark W-D>=W-C + potwierdzenie operatora
+    wlaczona: false          # OPT-IN: domyslnie NIE uruchamiany (warianty.py bierze na sztywno W-A/W-B/W-C; to wpis dokumentacyjny do wlaczenia recznie po potwierdzeniu)
 
 # Ktore silniki per typ definiuje config/typy.yaml (pole `silniki`).
 # Ponizej ustawienia wspolne oceny wariantow (produkcja/ocena.py):

@@ -43,14 +43,24 @@ from pathlib import Path
 
 import ezdxf
 from ezdxf import bbox as _bb
+from ezdxf import path as ezpath
 from ezdxf.math import Matrix44
 
+from shapely.geometry import LineString, Point, MultiLineString
+from shapely.ops import unary_union, polygonize_full
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "kontrola"))
-from bilans_konturow import count_interior_contours_shapely  # noqa: E402
+from bilans_konturow import count_interior_contours_shapely, EndpointSnapper  # noqa: E402
 
 GEOM_TYPES = {"LINE", "ARC", "CIRCLE", "LWPOLYLINE", "POLYLINE", "SPLINE", "ELLIPSE"}
 TRYBY_KOLOR = {"col7": 7, "col2": 2, "col4": 4}
 PRIORYTET_TRYBOW = ("warstwa_geom", "col7", "col2", "col4")
+
+# --- stale UWAGA-pass (otwory INNEGO koloru niz kontur; jak wd_dwutorowy) ---
+AXIS_LT = {"CENTER", "CENTER2", "CENTERX2", "PHANTOM", "PHANTOM2", "MITTE"}
+SAGITTA_UP = 0.1     # dyskretyzacja krzywych [mm papieru]
+SNAP_UP = 0.1        # snap koncowek otwartych lancuchow [mm papieru]
+TOL_ON_UP = 0.15     # przynaleznosc probki do petli wewnetrznej [mm papieru]
 
 
 # ------------------------------ klocki pomocnicze ------------------------------
@@ -184,6 +194,201 @@ def wybierz_tryb(picked, geom_layer, sagitta=0.1, snap_tol=0.1):
     return tryb, listy[tryb], dict(metryki=metryki, uwagi=uwagi)
 
 
+# ------------------------------ UWAGA-pass (W-C) -------------------------------
+# Otwory narysowane INNYM kolorem niz kontur wypadaja z jednego trybu W-C
+# (SL40062903_p1: kontur kol.2, otwory kol.4). UWAGA-pass DOKLADA (ADDITIVE)
+# zamkniete petle innego koloru SCISLE wewnatrz obrysu bazowego. Status moze przez
+# to tylko SPASC na 🟡 (ogledziny 100%, zasada 6) - NIGDY nie podnosi (zasada 5).
+# Port sprawdzonego rdzenia z W-D (wd_dwutorowy), test: testy/test_uwaga_pass.py.
+
+def _up_is_axis_lt(e):
+    return (e.dxf.linetype or "").upper() in AXIS_LT
+
+
+def _up_flatten(e, sagitta=SAGITTA_UP):
+    p = ezpath.make_path(e)
+    return [(v.x, v.y) for v in p.flattening(distance=sagitta)]
+
+
+def _up_subsample(pts, n=24):
+    if len(pts) <= n:
+        return pts
+    step = max(1, len(pts) // n)
+    out = pts[::step]
+    if out[-1] != pts[-1]:
+        out.append(pts[-1])
+    return out
+
+
+def _up_densify(pts, max_step=2.0):
+    """Dogeszcza proste segmenty - inaczej LINE ma tylko KONCE (bug osi/chordu
+    liczonych jako obrys, wd densify)."""
+    out = [pts[0]]
+    for a, b in zip(pts, pts[1:]):
+        d = math.hypot(b[0] - a[0], b[1] - a[1])
+        k = int(d // max_step)
+        for i in range(1, k + 1):
+            t = i / (k + 1)
+            out.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
+        out.append(b)
+    return out
+
+
+def _up_build_solid(base_ents, sagitta=SAGITTA_UP, snap=SNAP_UP):
+    """Obrys bazowy (main solid) z geometrii wybranego trybu. Unia faces ->
+    najwiekszy komponent (chord/fazowanie nie sciety). Zwraca shapely Polygon
+    albo None (brak obrysu -> UWAGA-pass pominiety, nic nie dokladamy)."""
+    open_chains, closed = [], []
+    for e in base_ents:
+        if e.dxftype() == "CIRCLE":
+            c = e.ocs().to_wcs(e.dxf.center)
+            r = float(e.dxf.radius)
+            n = max(int(math.ceil(math.pi / math.acos(max(1.0 - sagitta / r, -1.0)))), 8) \
+                if r > sagitta else 8
+            ring = [(c.x + r * math.cos(2 * math.pi * i / n),
+                     c.y + r * math.sin(2 * math.pi * i / n)) for i in range(n)]
+            ring.append(ring[0])
+            closed.append(ring)
+            continue
+        try:
+            pts = _up_flatten(e, sagitta)
+        except Exception:
+            continue
+        if len(pts) < 2:
+            continue
+        d = math.hypot(pts[0][0] - pts[-1][0], pts[0][1] - pts[-1][1])
+        if d < 1e-9 or bool(getattr(e, "closed", False)):
+            if d >= 1e-9:
+                pts = pts + [pts[0]]
+            if len(pts) >= 4:
+                closed.append(pts)
+        else:
+            open_chains.append(pts)
+    snapper = EndpointSnapper(snap)
+    snapped = []
+    for pts in open_chains:
+        a = snapper.snap(pts[0])
+        b = snapper.snap(pts[-1])
+        snapped.append([a] + pts[1:-1] + [b])
+    lines = [LineString(p) for p in snapped + closed if len(p) >= 2]
+    if not lines:
+        return None
+    merged = unary_union(lines)
+    polys, _d, _c, _i = polygonize_full([merged])
+    faces = [g for g in polys.geoms if g.area > 0]
+    if not faces:
+        return None
+    uni = unary_union(faces)
+    comps = list(uni.geoms) if uni.geom_type == "MultiPolygon" else [uni]
+    return max(comps, key=lambda p: p.area)
+
+
+def _up_eff_color(e, layer_colors):
+    c = e.dxf.color
+    return layer_colors.get(e.dxf.layer, 7) if c == 256 else c
+
+
+def uwaga_pass(base_ents, other_cands, layer_colors=None,
+               tol_on=TOL_ON_UP, sagitta=SAGITTA_UP, snap=SNAP_UP):
+    """UWAGA-pass ADDITIVE: zamkniete petle INNEGO koloru SCISLE wewnatrz obrysu
+    bazowego (otwory innego koloru niz kontur).
+
+    base_ents:   geometria wybranego trybu W-C (kontur + otwory tego koloru).
+    other_cands: encje geometrii w regionie SPOZA base (juz bez gieca - zbierz_region
+                 wydziela giecia). layer_colors: mapa warstwa->kolor (do raportu).
+    Zwraca (add_circles, add_others, info):
+       add_circles - CIRCLE do dolozenia (ida do dedupu wspolsrodkowych W-C),
+       add_others  - niekolowe encje petli wewnetrznych do dolozenia,
+       info: uwaga_pass=N, n_axis_skip, obce_kolory(set), solid(bool), powody[].
+    """
+    info = dict(uwaga_pass=0, n_axis_skip=0, obce_kolory=set(), solid=False, powody=[])
+    main = _up_build_solid(base_ents, sagitta, snap)
+    if main is None:
+        info["powody"].append("brak obrysu bazowego (polygonize) -> UWAGA-pass pominiety")
+        return [], [], info
+    info["solid"] = True
+    ext_buf = main.exterior.buffer(tol_on / 2)
+
+    # (3) osie po linetype odpadaja PRZED polygonize
+    cands = []
+    for e in other_cands:
+        if _up_is_axis_lt(e):
+            info["n_axis_skip"] += 1
+            continue
+        cands.append(e)
+
+    def _mark(e):
+        if layer_colors is not None:
+            info["obce_kolory"].add(_up_eff_color(e, layer_colors))
+        else:
+            info["obce_kolory"].add(e.dxf.color)
+
+    # (4) CIRCLE innego koloru = zamkniety; srodek SCISLE w main, caly nie dotyka obrysu
+    add_circles, noncirc = [], []
+    for e in cands:
+        if e.dxftype() == "CIRCLE":
+            c = e.ocs().to_wcs(e.dxf.center)
+            r = float(e.dxf.radius)
+            p = Point(c.x, c.y)
+            if main.contains(p) and not main.exterior.buffer(tol_on).intersects(p.buffer(r)):
+                add_circles.append(e)
+                _mark(e)
+            continue
+        noncirc.append(e)
+
+    # (5) niekolowe: polygonize -> faces SCISLE wewnatrz main -> zachowaj encje na petlach
+    flat, open_chains, closed = {}, [], []
+    for e in noncirc:
+        try:
+            pts = _up_flatten(e, sagitta)
+        except Exception:
+            continue
+        if len(pts) < 2:
+            continue
+        flat[id(e)] = pts
+        d = math.hypot(pts[0][0] - pts[-1][0], pts[0][1] - pts[-1][1])
+        if d < 1e-9 or bool(getattr(e, "closed", False)):
+            if d >= 1e-9:
+                pts = pts + [pts[0]]
+            if len(pts) >= 4:
+                closed.append(pts)
+        else:
+            open_chains.append(pts)
+    snapper = EndpointSnapper(snap)
+    snapped = []
+    for pts in open_chains:
+        a = snapper.snap(pts[0])
+        b = snapper.snap(pts[-1])
+        snapped.append([a] + pts[1:-1] + [b])
+    lines = [LineString(p) for p in snapped + closed if len(p) >= 2]
+    add_others = []
+    if lines:
+        merged = unary_union(lines)
+        polys, _d, _c, _i = polygonize_full([merged])
+        faces = [g for g in polys.geoms if g.area > 0]
+        inner_rings = []
+        for f in faces:
+            fx = f.exterior
+            if (main.contains(f.representative_point())
+                    and not fx.within(ext_buf)
+                    and not fx.intersects(main.exterior)):
+                inner_rings.append(fx)
+        acc = MultiLineString([LineString(r.coords) for r in inner_rings]) if inner_rings else None
+        if acc is not None:
+            for e in noncirc:
+                pts = flat.get(id(e))
+                if not pts:
+                    continue
+                smp = _up_subsample(_up_densify(pts))
+                on = sum(1 for p in smp if acc.distance(Point(p)) <= tol_on)
+                if on >= 0.6 * len(smp):
+                    add_others.append(e)
+                    _mark(e)
+
+    info["uwaga_pass"] = len(add_circles) + len(add_others)
+    return add_circles, add_others, info
+
+
 # --------------------------------- ekstrakcja ----------------------------------
 
 def extract_region_warstwa(src_msp, box, scale, is_pl=False, geom_layer=None,
@@ -211,6 +416,18 @@ def extract_region_warstwa(src_msp, box, scale, is_pl=False, geom_layer=None,
         uwagi.append(f"detect_geom_layer: zero koloru 7 w bbox -> fallback warstwa "
                      f"'{det_layer}' (geometria na nietypowym kolorze - SL40061302=kolor 2)")
 
+    # UWAGA-pass: dolóż zamkniete petle INNEGO koloru SCISLE wewnatrz obrysu (otwory
+    # narysowane innym kolorem niz kontur - jeden tryb W-C by je zgubil, SL40062903).
+    geom_ids = {id(e) for e in geom_ents}
+    other_cands = [e for e, _ec in picked if id(e) not in geom_ids]
+    up_circles, up_others, up_info = uwaga_pass(geom_ents, other_cands, layer_colors)
+    if up_info["uwaga_pass"]:
+        uwagi.append(
+            f"UWAGA-pass: dolozono {up_info['uwaga_pass']} petli INNEGO koloru "
+            f"{sorted(up_info['obce_kolory'])} wewnatrz obrysu (otwory innego koloru "
+            f"niz kontur) -> NIEPEWNE, ogledziny 100% (zasada 6), status moze tylko "
+            f"SPASC do zoltego (zasada 5)")
+
     # giecia tylko z warstw wybranej geometrii + warstw GIECIE (osie kol.6 z
     # obcych warstw nie wchodza)
     warstwy_geom = {e.dxf.layer for e in geom_ents}
@@ -226,9 +443,10 @@ def extract_region_warstwa(src_msp, box, scale, is_pl=False, geom_layer=None,
     nmsp = new.modelspace()
     transform_failed = []
 
-    # kontur + otwory
+    # kontur + otwory (+ UWAGA-pass: okregi innego koloru ADDITIVE; wpadaja do tego
+    # samego dedupu wspolsrodkowych ponizej, wiec fertzing innego koloru tez sie zredukuje)
     circles = []
-    for e in geom_ents:
+    for e in list(geom_ents) + list(up_circles):
         ne = e.copy()
         try:
             ne.transform(m)
@@ -241,6 +459,17 @@ def extract_region_warstwa(src_msp, box, scale, is_pl=False, geom_layer=None,
             circles.append(ne)
         else:
             nmsp.add_entity(ne)
+    # niekolowe petle UWAGA-pass (sloty/fasole innego koloru wewnatrz obrysu)
+    for e in up_others:
+        ne = e.copy()
+        try:
+            ne.transform(m)
+        except Exception as ex:
+            transform_failed.append(f"UWAGA {e.dxftype()} handle={e.dxf.handle}: {ex}")
+            continue
+        ne.dxf.layer = "0"
+        ne.dxf.color = 7
+        nmsp.add_entity(ne)
 
     # dedup okregow wspolsrodkowych (fertzing: przelot+poglebienie -> NAJMNIEJSZY).
     # Srodek ZAWSZE OCS->WCS: ezdxf po transform() ZACHOWUJE extrusion (0,0,-1)
@@ -305,6 +534,9 @@ def extract_region_warstwa(src_msp, box, scale, is_pl=False, geom_layer=None,
         interior=interior, interior_detale=det,
         wymiar_x=round(ext.size.x, 2), wymiar_y=round(ext.size.y, 2),
         transform_failed=transform_failed,
+        uwaga_pass=up_info["uwaga_pass"],
+        uwaga_kolory=sorted(up_info["obce_kolory"]),
+        uwaga_axis_skip=up_info["n_axis_skip"],
         tryby_metryki=diag["metryki"], uwagi=uwagi,
     )
     return new, info

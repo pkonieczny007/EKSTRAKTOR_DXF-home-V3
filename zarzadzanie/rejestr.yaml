@@ -136,6 +136,22 @@ narzedzia:
     plik: produkcja/orkiestrator.py
     test: "python testy\\benchmark_v3.py"
 
+  - nazwa: przebieg-zlecenia
+    typ: aplikacja
+    wersja: "1.0"
+    status: dziala
+    opis: "P0.1 audytu 2026-07-06: JEDNA komenda na zlecenie spinajaca caly tor (subprocess istniejacych modulow, NIC nie zmienia w produkcja/): orkiestrator -> raport(+wykaz) -> sprawdz_folder(nakladki+flagi) -> sweep(kompletnosc) -> przeglad -> metryka. Krok padl => GLOSNY blok + KONTYNUACJA + niezerowy exit; podsumowanie=tabela rysunek x krok x status x czas x artefakty. Pomijalne --bez-galerii/--bez-metryki, tryb --parytet. Folder conv => petla per-rysunek. Sweep 'stagowany' (buduje layout <zeinr>/<zeinr>_raport.csv wymagany przez sweep.py, nie ruszajac sweepa). Domyka: warstwy pomiaru odpalane 1 komenda (zasada 7 przestaje byc deklaracja)"
+    plik: produkcja/przebieg.py
+    test: "python testy\\test_przebieg.py"
+
+  - nazwa: w-d-dwutorowy
+    typ: aplikacja
+    wersja: "1.0"
+    status: plan
+    opis: "OPT-IN (config/warianty.yaml wlaczona:false; awans po potwierdzeniu operatora, zasada 13). Silnik W-D (dwutorowy, metoda operatora): TOR 1 bbox hojnie (box+skala z zewnatrz jak W-C) -> TOR 2 czyszczenie konturem zewn. + kolorem bazowym z krawedzi (point-in-polygon). Root-fix na otwory INNEGO koloru (UWAGA-pass) i cechy odseparowane; czyszczenie v2 (osie/giecia UP/fazowanie). Opt-in 4. wariant (config/warianty.yaml wlaczona:false). Boj 41_2050: 22/24 napraw czyszczenia, wygral z V3 na SL40062903 (otwory obcego koloru). Benchmark W-D vs W-C: 31/33 rowne, domyka 2 otwarte kontury. Znane: SL10582053_p1 zwezony wymiar -> golden przed wlaczeniem"
+    plik: produkcja/silniki/wd_dwutorowy.py
+    test: "python testy\\test_wd.py"
+
   - nazwa: typowanie
     typ: aplikacja
     wersja: "0.2"
@@ -206,7 +222,7 @@ narzedzia:
     status: dziala
     opis: "STANDARD zaznaczania wykazu dla zlecenia WIELORYSUNKOWEGO: kopia wykazu (oryginal nietkniety), per-zeinr scoping, filtr kolumny (rysuj/rysuj ZUBEHOR), kolumny wynikowe ZA OSTATNIA UZYWANA kolumna (max_column+1 - nie nachodza na formuly NAZWA; bug fix 07.07). Dodaje status(semafor barwiony)+plik_dxf+technologia(+faza)+skala+X-DXF/Y-DXF+Abmess+formuly x=x,y/y=x,y+UWAGI(kontrola-wymiaru)+powod. Uzyty na 61_7227 (50) i 38_1847_ZUBEHOR (292)"
     plik: produkcja/kontrola/marker_wykazu.py
-    test: ""
+    test: "python testy\\test_marker_wykazu.py"
 
   - nazwa: licznik-konturow
     typ: aplikacja
