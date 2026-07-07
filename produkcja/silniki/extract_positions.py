@@ -44,6 +44,24 @@ FALLBACK_GAPS = (8.0, 4.0, 2.0)  # tryb bez warstw: widoki bywaja blizej siebie
 SCALE_TOL = 0.03           # 3% tolerancji na zgodnosc skali x vs y
 NICE_SCALES = [1, 2, 2.5, 4, 5, 8, 10, 20]
 
+# detektor rozwiniecia (anty-izometryk) lezy w ../kontrola. Importujemy LENIWIE,
+# by uniknac cyklu (detektor importuje ten modul) - dopiero przy pierwszym uzyciu
+# rankingu. Bootstrap sciezki, by dzialalo niezaleznie od cwd wolajacego.
+_KONTROLA_DIR = Path(__file__).resolve().parent.parent / "kontrola"
+_DETEKTOR = None
+
+
+def _detektor():
+    """Leniwy import detektora rozwiniecia (kontrola/detektor_rozwiniecia.py)."""
+    global _DETEKTOR
+    if _DETEKTOR is None:
+        p = str(_KONTROLA_DIR)
+        if p not in sys.path:
+            sys.path.insert(0, p)
+        import detektor_rozwiniecia as det
+        _DETEKTOR = det
+    return _DETEKTOR
+
 
 def parse_dim(v):
     """Wykaz ma wymiary jako liczby albo stringi '      2.232,000' (format niemiecki)."""
@@ -208,6 +226,14 @@ def partition(ents):
         if t in ANNOT_TYPES:
             annot.append(e)
         elif t in GEOM_TYPES:
+            # KOLOR 6 (magenta) = linia giecia NIEZALEZNIE od linetype - sprawdzamy
+            # PRZED linetype, bo giecie bywa rysowane linia CENTER/PHANTOM/MITTE i
+            # gubi sie jako os symetrii (konwencja klienta z CLAUDEv1). Krzyz osi
+            # otworu rozni sie od giecia dlugoscia wzgledem widoku - tu nie kasujemy,
+            # tylko przenosimy na warstwe GIECIE (nie znika z laseru).
+            if e.dxf.color == 6:
+                bend.append(e)
+                continue
             lt = (e.dxf.linetype or "").upper()
             if lt in AXIS_LINETYPES:
                 axis.append(e)
@@ -220,8 +246,11 @@ def partition(ents):
     return geom, axis, dashed, bend, annot
 
 
-def rank_value(clusters, cand):
-    """Ranking kandydata na widok glowny:
+def rank_value(clusters, cand, dims=None, bend_texts=None):
+    """Ranking kandydata na widok glowny (additive - detektor rozwiniecia GLOWNYM
+    kluczem, potem dawne kryteria):
+    0) TOT detektora rozwiniecia (rozwiniecie > rzut/izometryk) - premiuje plaski
+       kontur z otworami, karze elipsy/rozproszone katy (dims=None -> 0, dawny ranking);
     1) skala "ladna" rysunkowa (1,2,2.5,4,5,8,10,20),
     2) NAJMNIEJ otwartych koncow konturu (laser wymaga zamknietych konturow;
        widok w zlozeniu ma krawedzie poprzerywane sasiadami),
@@ -234,7 +263,10 @@ def rank_value(clusters, cand):
         ents.extend(i["entities"])
     solid = [e for e in ents
              if not (e.dxf.linetype or "").upper().startswith(("DASHED", "HIDDEN"))]
-    return (nice, -open_ends(solid), len(ents), -rel_err)
+    tot = 0
+    if dims is not None:
+        _, _, tot = _detektor().score_klastra(c, clusters, dims, bend_texts or [])
+    return (tot, nice, -open_ends(solid), len(ents), -rel_err)
 
 
 def inside_bbox(ents, box, margin=0.5):
@@ -334,7 +366,8 @@ def overlaps_claimed(box, claimed, thresh=0.5):
     return False
 
 
-def extract_position(src_doc, layer, posn, dims, out_dir, zeinr, claimed=None):
+def extract_position(src_doc, layer, posn, dims, out_dir, zeinr, claimed=None,
+                     bend_texts=None):
     """Tryb warstwowy: pozycja NN = warstwa 1NN. Zwraca dict raportu."""
     msp = src_doc.modelspace()
     all_on_layer = [e for e in msp if e.dxf.layer == layer]
@@ -365,14 +398,24 @@ def extract_position(src_doc, layer, posn, dims, out_dir, zeinr, claimed=None):
         if m:
             candidates.append((c, m))
     if candidates:
-        best = max(candidates, key=lambda cand: rank_value(clusters, cand))
+        best = max(candidates, key=lambda cand: rank_value(
+            clusters, cand, (dim_max, dim_min), bend_texts))
     else:
-        # awaryjnie: najwiekszy klaster, skala z dluzszego boku
-        c = clusters[0]
+        # awaryjnie (brak prop-matchu): zamiast slepo najwiekszego klastra wybierz
+        # ten, ktory NAJBARDZIEJ wyglada jak rozwiniecie (detektor: argmax geo).
+        # Chroni przed wyborem rzutu izometrycznego/bocznego o duzym bbox.
+        det = _detektor()
+        bt = bend_texts or []
+        kand = [c for c in clusters if len(c["entities"]) >= 8] or clusters[:1]
+        c = max(kand, key=lambda cc: det.score_klastra(
+            cc, clusters, (dim_max, dim_min), bt)[0])
+        geo_c = det.score_klastra(c, clusters, (dim_max, dim_min), bt)[0]
         cw = max(c["w"], c["h"])
         scale = dim_max / cw if cw > 0 else 1.0
         best = (c, (scale, 999))
-        rep["status"] = "NIEPEWNE (brak zgodnosci proporcji)"
+        rep["status"] = ("NIEPEWNE (kandydat wyglada na izometrie/rzut)"
+                         if geo_c <= det.PROG_ANTY
+                         else "NIEPEWNE (brak zgodnosci proporcji)")
     cluster, (scale, rel_err) = best
     rep["scale"] = round(scale, 4)
     if claimed is not None and not rep["status"]:
@@ -386,7 +429,7 @@ def extract_position(src_doc, layer, posn, dims, out_dir, zeinr, claimed=None):
                      out_dir, zeinr, posn, rep, dims)
 
 
-def extract_fallback(src_doc, posn, dims, out_dir, zeinr, claimed=None):
+def extract_fallback(src_doc, posn, dims, out_dir, zeinr, claimed=None, bend_texts=None):
     """Tryb BEZ WARSTW: szuka widoku pasujacego do wykazu w calym rysunku.
     Dla rysunkow z jedna warstwa / lamiacych konwencje 1NN.
     Probuje kilku progow klastrowania - widoki bywaja narysowane blisko siebie."""
@@ -412,6 +455,16 @@ def extract_fallback(src_doc, posn, dims, out_dir, zeinr, claimed=None):
         for col, ents in by_color.items():
             if len(ents) >= 3:
                 geom_sets.append((f"col{col}", ents))
+    # PER-WARSTWA: rysunki SBM 5N trzymaja rozwiniecie na jednej warstwie
+    # (51/52/53), a wymiary/opis na innych - grupowanie po warstwie izoluje
+    # kontur tak jak per-kolor, gdy podzial nie jest kolorem tylko warstwa.
+    by_layer = defaultdict(list)
+    for e in geom:
+        by_layer[e.dxf.layer].append(e)
+    if len(by_layer) > 1:
+        for lay, ents in by_layer.items():
+            if len(ents) >= 10:
+                geom_sets.append((f"lay:{lay}", ents))
 
     best = None  # (rank_tuple, clusters, cand, gap, tag)
     for tag, gset in geom_sets:
@@ -425,7 +478,7 @@ def extract_fallback(src_doc, posn, dims, out_dir, zeinr, claimed=None):
                 # poz. lustrzanej) NIE moze byc uzyty drugi raz
                 if claimed is not None and overlaps_claimed(c["bbox"], claimed):
                     continue
-                rv = rank_value(clusters, (c, m))
+                rv = rank_value(clusters, (c, m), (dims[0], dims[1]), bend_texts)
                 if best is None or rv > best[0]:
                     best = (rv, clusters, (c, m), gap, tag)
     if best is None:
@@ -500,6 +553,8 @@ def main():
 
     doc = ezdxf.readfile(src_path)
     msp = doc.modelspace()
+    # adnotacje giecia (raz na rysunek) - sygnal detektora rozwiniecia w rankingu
+    bend_texts = _detektor().bend_texts_from_ents(list(msp))
     layers_used = sorted({e.dxf.layer for e in msp})
     pos_layers = {}
     for ln in layers_used:
@@ -513,13 +568,16 @@ def main():
         layer = pos_layers.get(posn)
         if layer is None:
             # brak warstwy 1NN -> od razu tryb bez warstw
-            rep = extract_fallback(doc, posn, wykaz[posn], out_dir, zeinr, claimed)
+            rep = extract_fallback(doc, posn, wykaz[posn], out_dir, zeinr, claimed,
+                                   bend_texts)
             reports.append(rep)
             continue
-        rep = extract_position(doc, layer, posn, wykaz.get(posn), out_dir, zeinr, claimed)
+        rep = extract_position(doc, layer, posn, wykaz.get(posn), out_dir, zeinr,
+                               claimed, bend_texts)
         if not rep["status"].startswith(("OK", "BRAK W WYKAZIE")) and posn in wykaz:
             # warstwa zawiodla (np. kontur rozrzucony po warstwach) -> bez warstw
-            rep2 = extract_fallback(doc, posn, wykaz[posn], out_dir, zeinr, claimed)
+            rep2 = extract_fallback(doc, posn, wykaz[posn], out_dir, zeinr, claimed,
+                                    bend_texts)
             if rep2["status"].startswith("OK"):
                 old = rep.get("file")
                 if old and old != rep2.get("file"):
