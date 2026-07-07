@@ -1,0 +1,49 @@
+Utworz prosty flask, do porownywania.
+
+w taki sposob wygladac bedzie
+C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home-V3\ideas\sprawdzanie_porownanie\Zrzut ekranu 2026-07-07 113349.png
+
+rysunek pozycji 
+rysunek pozycji png (na screenie nie ma ale tez chce)
+rysunek cały
+
+
+V3
+
+codex
+
+wd
+
+werdykt_v3
+werdykt_codex
+werdykt_wd
+uwagi
+
+
+uruchamiamy w app.py
+C:\Python_CLaude\EKSTRAKTOR_DXF\APP_do_porownywania
+
+
+mamy wszystkie pozycje z 
+"\\QNAP-ENERGO\tmp\EKSTRAKTOR_DXF_test\41_2050_test\POROWNANIE_41_2050.xlsx"
+
+i sposob otwierania
+rysunek pozycji - dxf z zoomowane na pozycji otwiera sie 
+rysunek pozycji png - png z zoomowane na pozycji 
+
+rysunek cały w dxf otwiera sie 
+
+
+V3 - png png porowanwczy
+
+codex - png png porowanwczy
+
+wd - png porowanwczy
+
+werdykt_v3 miejsce do wpisywania uwag
+werdykt_codex miejsce do wpisywania uwag
+werdykt_wd miejsce do wpisywania uwag
+uwagi miejsce do wpisywania uwag
+
+
+w przyszlosci zrobimy z tego uniwersalna apke do porownywania
