@@ -17,7 +17,7 @@
 **Decyzje:** W-D = **OPT-IN, nie inwestujemy** (UWAGA-pass już w W-C, V3 wygrywa 89%; słabość W-D=czyszczenie pitch-circli/gięć).
 
 **BACKLOG (następna sesja, priorytet):**
-1. 🔴 **GWINT REDESIGN** (user 08.07, NIEDOKOŃCZONE — czeka na wartość): domyślnie **ZACHOWAJ gwint** (okrąg+łuk) + oznacz na ŻÓŁTO (kolor 2) + uwaga „gwint MX" + status 🟡 (jak fazowanie); transformacja TYLKO na żądanie (flaga `--transformuj-gwint`): M12→CZERWONY. **DO POTWIERDZENIA: wartość M12 na żądanie — 10,2 dla wszystkich, czy Hardox 10,6 / zwykła 10,2?** (zła wartość=złom, zasada 1). To odwraca obecny auto-transform.
+1. 🔴 **GWINT REDESIGN** (user 08.07, NIEDOKOŃCZONE — wartość POTWIERDZONA): domyślnie **ZACHOWAJ gwint** (okrąg+łuk) + oznacz na ŻÓŁTO (kolor 2) + uwaga „gwint MX" + status 🟡 (jak fazowanie); transformacja TYLKO na żądanie (flaga `--transformuj-gwint`): M12→CZERWONY. **Wartości M12 (potwierdzone user 08.07): Hardox/trudnościeralne → 10,6; zwykła stal S235/S355 → 10,2** (per klasa materiału → tablica config rozbita na `trudnoscieralne`/`zwykle`). To ODWRACA obecny auto-transform (be604ba) na keep+żółty; transform staje się opt-in. Do zrobienia: `oznacz_gwinty()` (żółty+flaga, każdy materiał) w raport.scal domyślnie; `zastosuj_do_pliku` tylko pod flagą, wartość wg klasy; golden+test; regresja+benchmark.
 2. Realne zlecenie end-to-end przez `/dxf-ekstrakcja` + pierwszy punkt metryki zaufania (główna miara).
 3. Kalibracja typowania na `zasady/przyklady/<typ>/` (Etap 4.3).
 4. Flager pitch-circle (okrąg podziałowy=obca geometria) jako propozycja QC — z lekcji W-D.
