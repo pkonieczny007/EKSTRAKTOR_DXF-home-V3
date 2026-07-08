@@ -178,6 +178,30 @@ def status_po_transformacji(zmiany):
     return "zolty" if any(z["akcja"] == "zostaw" for z in zmiany) else None
 
 
+def zastosuj_do_pliku(dxf_path, material, tablica):
+    """Post-process WYJSCIOWEGO DXF (1:1): transformacja gwintow dla materialu
+    TRUDNOSCIERALNEGO wg tablicy (luk out, okrag powiekszony CZERWONY) + ZAPIS pliku.
+    Na materiale ZWYKLYM NIC nie robi (gwint zostaje okrag+luk - gwint-okrag-luk-dimension).
+
+    Zwraca (n_zmienione, komentarz, status_min):
+      n_zmienione - ile gwintow faktycznie powiekszono (plik zapisany tylko gdy >0);
+      komentarz    - opis do uwag ('gwint M12 -> o10.6 (zmieniony); M8 bez wartosci...') / '';
+      status_min   - 'zolty' gdy jakikolwiek gwint zostal (bez wartosci/M?/anomalia), else None.
+    Bezpieczne: material zwykly / brak gwintow / pusta tablica => (0, '', None), plik nietkniety."""
+    import ezdxf
+    if not czy_trudnoscieralny(material):
+        return 0, "", None
+    doc = ezdxf.readfile(str(dxf_path))
+    zmiany = transformuj(doc.modelspace(), tablica or {})
+    if not zmiany:
+        return 0, "", None
+    n_zmienione = sum(1 for z in zmiany if z["akcja"] == "zmieniony")
+    if n_zmienione:
+        doc.saveas(str(dxf_path))   # zapis tylko gdy realnie cos zmieniono
+    komentarz = "; ".join(z["powod"] for z in zmiany)
+    return n_zmienione, komentarz, status_po_transformacji(zmiany)
+
+
 def open_ends(msp, exclude_handles=frozenset(), tol=END_TOL):
     """Otwarte konce (bramka 2): parowanie koncow realna odlegloscia <= tol.
     CIRCLE i encje zamkniete pomijane; giecie (kolor 6 / warstwa GIECIE) poza.

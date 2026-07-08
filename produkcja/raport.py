@@ -45,6 +45,15 @@ except Exception as _e:  # pragma: no cover
     _fazowanie = None
     print(f"[RAPORT] fazowanie niedostepne ({_e}) - raport bez oznaczania fazy")
 
+# transformacja gwintow na materiale TRUDNOSCIERALNYM (Hardox) - tylko gdy podany
+# --wykaz (material per pozycja) i tablica config/gwinty_hardox.yaml ma wartosci.
+try:
+    import gwint as _gwint
+except Exception as _e:  # pragma: no cover
+    _gwint = None
+    print(f"[RAPORT] gwint niedostepny ({_e}) - raport bez transformacji Hardox")
+_TABLICA_GWINT = Path(__file__).resolve().parent.parent / "config" / "gwinty_hardox.yaml"
+
 # semafor -> kolor wypelnienia (jak w Excelu: zielony/zolty/czerwony)
 SEM_KOLOR = {"zielony": "C6EFCE", "zolty": "FFEB9C", "czerwony": "FFC7CE"}
 SEM_IKONA = {"zielony": "🟢", "zolty": "🟡", "czerwony": "🔴"}
@@ -170,9 +179,48 @@ def _wykaz_pair(rap_row):
         return None
 
 
-def scal(folder_wynikow, rysunek=None):
+def _material_map(wykaz_path, zeinr):
+    """{posn: Bezeichnung} dla wierszy danego zeinr - do wykrycia materialu Hardox.
+    Bezpieczne: brak openpyxl / pliku / kolumny Bezeichnung -> {} (GLOSNO); nie wywraca raportu."""
+    try:
+        import openpyxl
+    except ImportError:
+        return {}
+    wp = Path(wykaz_path)
+    if not wp.exists():
+        print(f"[RAPORT] wykaz do materialu nie istnieje: {wp} (GLOSNO)")
+        return {}
+    try:
+        ws = openpyxl.load_workbook(wp, data_only=True).worksheets[0]
+        hr, nag = _znajdz_naglowek(ws)
+        if hr is None or "Posn" not in nag or "Zeinr" not in nag:
+            return {}
+        kolb = next((col for name, col in nag.items()
+                     if "bezeich" in str(name).lower()), None)
+        if kolb is None:
+            print("[RAPORT] brak kolumny Bezeichnung - transformacja gwintu pominieta (GLOSNO)")
+            return {}
+        out = {}
+        for i in range(hr + 1, ws.max_row + 1):
+            zc = ws.cell(row=i, column=nag["Zeinr"]).value
+            pc = ws.cell(row=i, column=nag["Posn"]).value
+            if zc is None or zeinr not in str(zc) or pc is None:
+                continue
+            try:
+                out[int(pc)] = str(ws.cell(row=i, column=kolb).value or "")
+            except (ValueError, TypeError):
+                continue
+        return out
+    except Exception as e:
+        print(f"[RAPORT] material z wykazu pominiety ({e}) (GLOSNO)")
+        return {}
+
+
+def scal(folder_wynikow, rysunek=None, wykaz=None):
     """Scala ocene wariantow + raport silnika + realny pomiar DXF w rekordy per pozycja.
-    Zwraca (zeinr, rekordy). rysunek (conv.dxf) opcjonalny: dokłada technologia."""
+    Zwraca (zeinr, rekordy). rysunek (conv.dxf) opcjonalny: dokłada technologia.
+    wykaz opcjonalny: wlacza transformacje gwintow Hardox (material trudnoscieralny ->
+    luk out, okrag powiekszony CZERWONY wg config/gwinty_hardox.yaml; status min. ZOLTY)."""
     folder = Path(folder_wynikow)
     if not folder.is_dir():
         raise NotADirectoryError(folder)
@@ -199,6 +247,16 @@ def scal(folder_wynikow, rysunek=None):
             ma_spaw = has_weld(ezdxf.readfile(str(rysunek)).modelspace())
         except Exception as e:
             print(f"[RAPORT] technologia pominieta - nie wczytano {rysunek} ({e})")
+
+    # gwint Hardox: material per pozycja (z wykazu) + tablica srednic - tylko gdy --wykaz.
+    mat_map, tablica_gwint = {}, None
+    if wykaz and _gwint is not None:
+        mat_map = _material_map(wykaz, zeinr)
+        if mat_map:
+            try:
+                tablica_gwint = _gwint.wczytaj_tablice(_TABLICA_GWINT)
+            except Exception as e:
+                print(f"[RAPORT] tablica gwintow niewczytana ({e}) - transformacja pominieta (GLOSNO)")
 
     rekordy = []
     for b in baza:
@@ -250,6 +308,21 @@ def scal(folder_wynikow, rysunek=None):
                                    if technologia and technologia != "brak" else "faza")
             except Exception as e:
                 print(f"[RAPORT] fazowanie pominiete ({dxf_path}): {e} (GLOSNO)")
+
+        # gwint Hardox: material trudnoscieralny -> luk out, okrag powiekszony CZERWONY
+        # wg tablicy (nieznana wartosc -> zostaw + status ZOLTY). Zwykly material -> no-op.
+        if tablica_gwint and mat_map and dxf_path and Path(dxf_path).exists():
+            try:
+                n_gw, gw_kom, gw_stat = _gwint.zastosuj_do_pliku(
+                    dxf_path, mat_map.get(posn, ""), tablica_gwint)
+                if gw_kom:
+                    uwagi = "; ".join(x for x in (uwagi, gw_kom) if x)
+                    technologia = (f"{technologia}+gwint"
+                                   if technologia and technologia != "brak" else "gwint")
+                if gw_stat == "zolty" and semafor == "zielony":
+                    semafor = "zolty"   # zasada 5: status tylko obnizany
+            except Exception as e:
+                print(f"[RAPORT] gwint pominiety ({dxf_path}): {e} (GLOSNO)")
 
         rekordy.append(dict(
             zeinr=zeinr, posn=posn, semafor=semafor, zwyciezca=zwyciezca,
@@ -408,7 +481,7 @@ def main(argv):
     if rest and Path(rest[0]).suffix.lower() == ".dxf":
         rysunek = rest[0]
 
-    zeinr, rekordy = scal(folder, rysunek)
+    zeinr, rekordy = scal(folder, rysunek, wykaz)
     if not rekordy:
         print(f"[RAPORT] brak ocena.csv/raport.csv w {folder}")
         return 1

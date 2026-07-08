@@ -178,9 +178,9 @@ narzedzia:
 
   - nazwa: raport-zlecenia
     typ: aplikacja
-    wersja: "1.2"
+    wersja: "1.3"
     status: dziala
-    opis: "Scalenie zlecenia (etap 3-4): merge ocena.csv (wielowariant) LUB raport.csv (parytet) + raport silnika + REALNY pomiar wyjsciowego DXF -> <zeinr>_podsumowanie.csv; wymiar_dxf vs Abmess (bramka 1 tol=max(1mm,0.2%)) = uwagi_wymiar; technologia G/GS/S/brak z rysunku (Schweissgruppe+giecie). Zapis statusow do KOPII wykazu (--wykaz): status kolorem, plik_dxf, technologia, skala, wymiar_dxf_x/y, uwagi_wymiar, uwagi; ORYGINAL NIETKNIETY (pulapka formul). v1.1: wpiete FAZOWANIE - scal() wola fazowanie.oznacz_w_pliku (recolor ZOLTY + komentarz, technologia+=faza). v1.2 (07.07): FIX placementu kolumn wynikowych - za ostatnia UZYWANA kolumna (max_column+1), nie za nazwanym naglowkiem (nachodzily na formuly NAZWA)"
+    opis: "Scalenie zlecenia (etap 3-4): merge ocena.csv (wielowariant) LUB raport.csv (parytet) + raport silnika + REALNY pomiar wyjsciowego DXF -> <zeinr>_podsumowanie.csv; wymiar_dxf vs Abmess (bramka 1 tol=max(1mm,0.2%)) = uwagi_wymiar; technologia G/GS/S/brak z rysunku. Zapis statusow do KOPII wykazu (--wykaz): status kolorem, plik_dxf, technologia, skala, wymiar_dxf_x/y, uwagi_wymiar, uwagi; ORYGINAL NIETKNIETY (pulapka formul). v1.1: wpiete FAZOWANIE. v1.2 (07.07): FIX placementu kolumn (max_column+1). v1.3 (08.07): wpieta TRANSFORMACJA GWINTU HARDOX - scal(--wykaz) czyta Bezeichnung per pozycja (_material_map), i dla materialu trudnoscieralnego wola gwint.zastosuj_do_pliku (luk out, okrag powiekszony CZERWONY wg config/gwinty_hardox.yaml; uwagi+=gwint MX->oY, technologia+=gwint, status obnizony do ZOLTY gdy gwint bez wartosci - zasada 5). Bez --wykaz lub material zwykly => NO-OP (bezpieczne z konstrukcji)"
     plik: produkcja/raport.py
     test: "python testy\\test_raport.py"
 
@@ -207,6 +207,14 @@ narzedzia:
     opis: "FLAGER FAZOWANIA (chamfer): linia rownolegla do krawedzi konturu zewn., OBA konce na pierscieniu (T-zlacza) + srodek wewnatrz, d in [1,10]mm, ratio~1 (shapely.polygonize + snap 0.001). Odroznia od slotu/dospawienia/giecia(kol.6). oznacz_w_pliku() koloruje linie fazy na ZOLTY (kol.2) + komentarz - operator 07.07: zostawic linie, kolor zolty, komentarz; pozycja zostaje 🟡 (flager nie podnosi statusu). Rdzen: fable-advisor, zweryfikowany niezaleznie (Opus); 3 pozytywy + 0 falszywych na 260 DXF (znalazl przeoczony SL10583062_p2). Wpiety w raport-zlecenia v1.1"
     plik: produkcja/kontrola/fazowanie.py
     test: "python testy\\test_fazowanie.py"
+
+  - nazwa: gwint
+    typ: aplikacja
+    wersja: "1.1"
+    status: dziala
+    opis: "GWINTY na materialach TRUDNOSCIERALNYCH (Hardox/HB4xx/XAR/RAEX). Sygnatura gwintu: ARC span 200-330 st wspolsrodkowy (<=0.3mm) z CIRCLE, ratio R_luk/R_okr in [1.08,1.30]. (a) thread_arcs -> wpiete w bramke 2/5 (bilans_konturow): luk gwintu ~270 st NIE liczy sie jako otwarty koniec na ZADNYM materiale. (b) v1.1 (08.07): zastosuj_do_pliku(dxf, material, tablica) wpiete w raport.scal(--wykaz) - transformacja WYJSCIOWEGO DXF dla trudnoscieralnych: luk USUN, okrag POWIEKSZ wg config/gwinty_hardox.yaml (M12=10.6 potwierdzone), kolor CZERWONY; nieznana wartosc/M? -> ZOSTAW + status ZOLTY (kotwica operatora); material zwykly -> NO-OP (gwint-okrag-luk zostaje). Golden gwint_hb450 (8x M12 HB450). Rdzen: fable-advisor (0 falszywych na 88 plikach)"
+    plik: produkcja/kontrola/gwint.py
+    test: "python testy\\test_gwint_hardox_transformacja.py"
 
   - nazwa: kontrola-wymiaru
     typ: aplikacja

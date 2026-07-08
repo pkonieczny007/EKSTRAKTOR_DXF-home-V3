@@ -1,8 +1,14 @@
 # Propozycja: Hardoxy (HB400/HB450, trudnoscieralne) - transformacja GWINTOW przy ekstrakcji
 
 - **Data / autor:** 2026-07-08, operator (plan podany wprost) + AI (spisanie)
-- **Status:** propozycja -> prototyp (fable) -> golden gwint_hb450 -> testy -> merge
-  (produkcja/kontrola/gwint.py + tablica config/gwinty_hardox.yaml)
+- **Status:** ✅ WPIETE 2026-07-08 (gwint v1.1, raport-zlecenia v1.3). `gwint.zastosuj_do_pliku`
+  wpiete w `raport.scal(--wykaz)`: czyta Bezeichnung per pozycja (`_material_map`), dla materialu
+  trudnoscieralnego transformuje WYJSCIOWY DXF (luk out, okrag powiekszony CZERWONY wg
+  `config/gwinty_hardox.yaml`, M12=10.6 potwierdzone), nieznana wartosc -> zostaw + status ZOLTY,
+  material zwykly -> NO-OP. Golden `gwint_hb450` (8x M12 HB450). Test `test_gwint_hardox_transformacja`
+  (17 asercji: unit zastosuj_do_pliku + integracja scal). Bramka: regresja 43/43, test_raport,
+  benchmark_v3 0 regresji. POZOSTALE wartosci tablicy (M3..M24 poza M12) = null -> operator uzupelni.
+  (historia: propozycja -> prototyp fable -> golden -> testy -> merge)
 - **Doprecyzowuje:** [[otwarte-kontury-droga-blacha-do-czlowieka]] (wczesniejsza decyzja
   "otwarty kontur na Hardoxie -> czlowiek" zostaje TYLKO dla realnie otwartych obrysow;
   gwinty przestaja byc powodem czerwieni) oraz [[gwint-okrag-luk-dimension]].
