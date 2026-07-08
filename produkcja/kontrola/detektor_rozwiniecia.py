@@ -83,6 +83,27 @@ def orto45_frac(angs, tol=2.0):
     return sum(1 for a in angs if min(a % 45.0, 45.0 - (a % 45.0)) <= tol) / len(angs)
 
 
+def _dist_center(bbox, pt):
+    """Odleglosc srodka bbox do punktu - metryka przypisania adnotacji (jak kategoria 4)."""
+    cx, cy = (bbox[0] + bbox[2]) / 2.0, (bbox[1] + bbox[3]) / 2.0
+    return math.hypot(cx - pt[0], cy - pt[1])
+
+
+def _bend_annot_nearest(cluster, clusters, bend_texts):
+    """Ile adnotacji giecia NALEZY do tego klastra: dla ktorych jest NAJBLIZSZYM
+    (srodkiem bbox) sposrod wszystkich klastrow - nie po prostu 'w bbox' (R2: adnotacja
+    giecia sasiedniego widoku, wpadajaca geometrycznie w bbox innego kandydata o tych
+    samych proporcjach wykazu, dawala falszywe +2 i mogla przewrocic ranking). Przypisanie
+    jak babelek kategorii 4: kazda adnotacja -> jeden (najblizszy) klaster."""
+    if not clusters:
+        return 0
+    n = 0
+    for (x, y, _t) in bend_texts:
+        if min(clusters, key=lambda oc: _dist_center(oc["bbox"], (x, y))) is cluster:
+            n += 1
+    return n
+
+
 def features(cluster, clusters, dims, bend_texts):
     """Cechy klastra-kandydata do score_rozwiniecie. Wchlania wnetrze (otwory)
     jak ranking: interior_clusters + zamkniete kontury wewnetrzne.
@@ -110,9 +131,7 @@ def features(cluster, clusters, dims, bend_texts):
     f["open_ends"] = ep.open_ends(solid)
     f["dashed_frac"] = round((len(ents) - len(solid)) / max(len(ents), 1), 2)
     f["orto45"] = orto45_frac(line_angles(solid))
-    b = cluster["bbox"]
-    f["bend_annot"] = sum(1 for (x, y, _) in bend_texts
-                          if b[0] <= x <= b[2] and b[1] <= y <= b[3])
+    f["bend_annot"] = _bend_annot_nearest(cluster, clusters, bend_texts)
     f["prop_match"] = False
     f["nice"] = False
     f["scale"] = None

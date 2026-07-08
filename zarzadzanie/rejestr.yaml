@@ -97,11 +97,11 @@ narzedzia:
   # ---------- APLIKACJE: SILNIKI ----------
   - nazwa: silnik-w-a
     typ: aplikacja
-    wersja: "1.2"
+    wersja: "1.3"
     status: dziala
-    opis: "V1: klastrowanie + ranking widokow + zapis 1:1 (regresja 43/43 w V3). v1.1 (08.07): NAPRAWA RYZYKA R1 - partition() rozroznia krzyz osi otworu (kolor 6, LINE wycentrowana na srodku CIRCLE, L in [0.8,4.0]*srednica) od linii giecia TESTEM GEOMETRYCZNYM (konwerter GstarCAD rozbija linie przerywane na kreski <3mm - prog dlugosci zabilby rozbite giecie; progi zmierzone fable-advisor 84288 encji, 0/210 giec przez srodek okregu). Golden R1 (geom=4/axis=6/bend=14); realnie SL40081914 48 falszywych krzyzy z GIECIE, 0 zgubionej geometrii. v1.2 (08.07): NAPRAWA RYZYKA R3 - awaryjny wybor widoku (extract_position, brak prop-matchu) bierze NAJWIEKSZY nie-izometryczny klaster (_pick_fallback_geo), nie sam argmax geo (drobny detal 40x16/symbol 22x22 o wysokim geo bral gore nad rozwinieciem, bo open_ends za wchloniete wymiary zaniza geo duzej czesci). Naprawia SL40047020 (40x16->62x53) i SL10582652 (22x22->281x44), nie rusza 797/91010. regresja 43/43 + detektor 24/24 + benchmark_v3 0 regresji"
+    opis: "V1: klastrowanie + ranking widokow + zapis 1:1 (regresja 43/43 w V3). v1.1 (08.07): NAPRAWA R1 - partition() rozroznia krzyz osi (kolor 6, LINE wycentrowana na srodku CIRCLE, L in [0.8,4.0]*srednica) od linii giecia TESTEM GEOMETRYCZNYM (progi fable-advisor 84288 encji, 0/210 giec przez srodek okregu); golden R1; SL40081914 48 falszywych krzyzy z GIECIE, 0 zgubionej geometrii. v1.2 (08.07): NAPRAWA R3 - awaryjny wybor (_pick_fallback_geo) bierze NAJWIEKSZY nie-izometryczny, nie sam argmax geo; naprawia SL40047020 (40x16->62x53) i SL10582652 (22x22->281x44). v1.3 (08.07): NAPRAWA R2 (detektor_rozwiniecia.py) - adnotacja giecia +2 przypisana do NAJBLIZSZEGO klastra (_bend_annot_nearest, jak babelek kat.4), nie do KAZDEGO bbox ja zawierajacego (adnotacja sasiedniego widoku w bbox innego kandydata dawala falszywe +2 i mogla przewrocic ranking). Izometryki 91010/652 nietkniete (adnotacja dalej najblizsza rozwinieciu). test_r2 7 asercji. regresja 43/43 + detektor 24/24 + benchmark_v3 0 regresji"
     plik: produkcja/silniki/extract_positions.py
-    test: "python testy\\test_r3_fallback_rozmiar.py"
+    test: "python testy\\test_r2_bend_annot_najblizszy.py"
 
   - nazwa: silnik-w-b
     typ: aplikacja

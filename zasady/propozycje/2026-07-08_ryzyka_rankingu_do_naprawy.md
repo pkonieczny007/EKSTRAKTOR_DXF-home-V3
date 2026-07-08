@@ -40,7 +40,17 @@ od giecia dlugoscia". Stary kod: magenta+CENTER -> axis (odrzucany). Nowy: -> be
   czesci; krzyz osi ~ srednica otworu). Golden: rysunek z magenta krzyzem osi + magenta
   linia giecia -> giecie na GIECIE, os odrzucona. Do zrobienia PRZED zmiana l.234.
 
-## RYZYKO 2 (srednia) - bend_annot liczony z CALEGO modelspace, przestrzenny false-positive
+## RYZYKO 2 (srednia) — ✅ NAPRAWIONE 2026-07-08 (silnik-w-a v1.3, detektor_rozwiniecia.py)
+**Rozwiazanie:** `_bend_annot_nearest` — kazda adnotacja giecia liczy +2 tylko dla klastra,
+ktory jest jej NAJBLIZSZY (srodkiem bbox, jak babelek kategorii 4), nie dla kazdego kandydata
+ktorego bbox ja zawiera. Adnotacja sasiedniego widoku wpadajaca w (wiekszy) bbox innego
+kandydata przestaje dawac falszywe +2. Izometryki 91010/652 (maja adnotacje giecia w
+rozwinieciu) nietkniete - rozwiniecie jest najblizsze swojej adnotacji. Test
+`testy/test_r2_bend_annot_najblizszy.py` (7 asercji: nowe przypisanie, dowod ze stare 'w bbox'
+dawalo oba, integracja przez features). Bramka: regresja 43/43, detektor 24/24 (izometryki
+bez zmian), benchmark_v3 0 regresji, testy_v2/lustro/warianty/gr4/sweep_54_4867 PASS.
+
+### (historyczny opis defektu)
 `detektor_rozwiniecia`: bend_annot = +2 za KAZDY tekst giecia (n.oben/gekantet/Kantung),
 ktorego punkt wstawienia lezy w bbox kandydata - a teksty zbierane z CALEGO msp. Adnotacja
 giecia SASIEDNIEGO widoku, geometrycznie w bbox innego kandydata o tych samych wymiarach
@@ -80,8 +90,9 @@ liczeniem open_ends w score (spojnie z UWAGA-pass/W-D czyszczeniem).
 
 ## Kryterium naprawy (kolejnosc, kazde przez golden)
 1. ✅ RYZYKO 1 (partition krzyz osi) - ZROBIONE 08.07 (silnik-w-a v1.1).
-2. ✅ RYZYKO 3 (argmax rozmiar) - ZROBIONE 08.07 (silnik-w-a v1.2). NASTEPNE:
-3. RYZYKO 2 (bend_annot najblizszy klaster). 4. RYZYKO 4 (czyszczenie przed geo).
+2. ✅ RYZYKO 3 (argmax rozmiar) - ZROBIONE 08.07 (silnik-w-a v1.2).
+3. ✅ RYZYKO 2 (bend_annot najblizszy klaster) - ZROBIONE 08.07 (silnik-w-a v1.3). NASTEPNE:
+4. RYZYKO 4 (czyszczenie linii wymiarowych przed geo - INFO, do rozwazenia).
 Kazde: golden -> zmiana -> regresja 43/43 + benchmark_v3 + test_detektor/lustro -> potwierdzenie.
 
 ## PRZY OKAZJI ZNALEZIONE (osobne, NIE z R1)
