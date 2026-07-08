@@ -86,9 +86,9 @@ narzedzia:
 
   - nazwa: dxf-ekstrakcja
     typ: skill
-    wersja: "1.0"
+    wersja: "1.1"
     status: dziala
-    opis: "PELNY tor produkcyjny V3 na zleceniu: recall wiedzy -> typowanie(profil) -> orkiestrator (W-A/W-B/W-C+ocena) -> raport+wykaz -> sprawdz AI (nakladki+flagi 100%) -> galeria czlowieka -> metryka. NOWY skill V3 OBOK /wyciagnij-dxf (V1/V2) - nie podmienia (decyzja usera 06.07). Zrodlo skills/dxf-ekstrakcja/ - DEPLOY operatora jeszcze nie wykonany"
+    opis: "PELNY tor produkcyjny V3 na zleceniu: recall wiedzy -> typowanie(profil) -> orkiestrator (W-A/W-B/W-C+ocena) -> raport+wykaz -> sprawdz AI (nakladki+flagi 100%) -> galeria czlowieka -> metryka. NOWY skill V3 OBOK /wyciagnij-dxf (V1/V2) - nie podmienia (decyzja usera 06.07). v1.1 (08.07): opisany krok GWINT HARDOX (auto w raport --wykaz: trudnoscieralne -> luk out/okrag +czerwony wg tablicy, nieznane M -> zolty) + regula domenowa Hardox. Deploy 08.07 (14 celow OK)"
     instalacje:
       - "~/.claude/skills/dxf-ekstrakcja"
       - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\dxf-ekstrakcja"
