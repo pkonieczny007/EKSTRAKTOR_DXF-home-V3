@@ -12,7 +12,22 @@ sciezka awaryjna argmax geo, grupowanie per-warstwa, partition kolor6-przed-line
 warianty.py (lustro T1/T2). Przechodzi wszystkie bramki, ale W-A wygrywa 0% pozycji, wiec
 benchmark (porownuje ZWYCIEZCOW) NIE widzi zmian w W-A - stad 0 regresji mimo realnych ryzyk.
 
-## RYZYKO 1 (srednia) - partition: kolor 6 BEZWARUNKOWO na GIECIE, brak progu dlugosci
+## RYZYKO 1 (srednia) — ✅ NAPRAWIONE 2026-07-08 (silnik-w-a v1.1)
+**Rozwiazanie:** test GEOMETRYCZNY zamiast progu dlugosci (fable-advisor zmierzyl 84288
+encji kolor-6: konwerter GstarCAD rozbija linie przerywane na kreski <3mm, wiec sam prog
+dlugosci zabilby rozbite giecie; ZERO z 210 realnych giec przechodzi przez srodek okregu).
+`partition()`: kolor-6 LINE -> `axis` (odrzucany z GIECIE) tylko gdy midpoint <= 0.5*r od
+srodka CIRCLE i L in [0.8, 4.0]*srednica; cala reszta magenta -> `bend`. Przesuwa encje
+wylacznie miedzy bend/axis (poza klastrowaniem geom+dashed) -> klastry/ranking/detektor
+nietkniete. Golden `testy/golden/R1_kolor6_krzyz_osi_vs_giecie/` (geom=4/axis=6/bend=14,
+w tym rozbite giecie 12 kresek NIE ginie + os symetrii L/D=5.6 zostaje bend). Test
+`testy/test_r1_kolor6_giecie.py` (7 asercji). Walidacja: regresja 43/43, testy_v2 35/35,
+detektor 24/24, lustro 16/16, warianty 17/17, benchmark_v3 0 regresji, benchmark_v2 bez
+zmian (35 identycznych przed i po). Realnie SL40081914: 48 falszywych krzyzy z GIECIE
+usunietych, 0 zgubionej geometrii. NIEPOKRYTE (zostaje jako znane): krzyz osi na
+fasoli/slocie/elipsie bez CIRCLE -> zostaje bend jak dzis (lagodzi W-D + oko w galerii).
+
+### (historyczny opis defektu)
 **POTWIERDZONE w kodzie** (`extract_positions.py:234`): `if e.dxf.color == 6: bend.append(e)`
 bez rozroznienia dlugoscia, choc komentarz (l.231-233) obiecuje "krzyz osi otworu rozni sie
 od giecia dlugoscia". Stary kod: magenta+CENTER -> axis (odrzucany). Nowy: -> bend (GIECIE).
@@ -54,6 +69,13 @@ niezmienniki realne, nie prototypowe. Do rozwazenia: czyszczenie linii wymiarowy
 liczeniem open_ends w score (spojnie z UWAGA-pass/W-D czyszczeniem).
 
 ## Kryterium naprawy (kolejnosc, kazde przez golden)
-1. RYZYKO 1 (partition dlugosc) - safety-adjacent, pierwsze. 2. RYZYKO 3 (argmax rozmiar).
-3. RYZYKO 2 (bend_annot najblizszy klaster). 4. RYZYKO 4 (czyszczenie przed geo).
+1. ✅ RYZYKO 1 (partition krzyz osi) - ZROBIONE 08.07 (silnik-w-a v1.1). NASTEPNE:
+2. RYZYKO 3 (argmax rozmiar). 3. RYZYKO 2 (bend_annot najblizszy klaster).
+4. RYZYKO 4 (czyszczenie przed geo).
 Kazde: golden -> zmiana -> regresja 43/43 + benchmark_v3 + test_detektor/lustro -> potwierdzenie.
+
+## PRZY OKAZJI ZNALEZIONE (osobne, NIE z R1)
+- **benchmark_v2 PRE-EXISTING FAIL**: `SL10578806_p4` 14 roznic W-A vs W-B na czystym HEAD
+  (przed patchem R1 - baseline potwierdzil). Maskowane przez `--szybko` (SKIP_SZYBKO zawiera
+  benchmark_v2). Plik NIE ma ani jednej encji przenoszonej przez R1 (magenta-w-axis=0), wiec
+  R1 go nie dotyka. Osobna diagnoza do zrobienia - do NOWEJ propozycji, nie mieszac z R1.

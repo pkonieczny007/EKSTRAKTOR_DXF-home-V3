@@ -44,6 +44,15 @@ FALLBACK_GAPS = (8.0, 4.0, 2.0)  # tryb bez warstw: widoki bywaja blizej siebie
 SCALE_TOL = 0.03           # 3% tolerancji na zgodnosc skali x vs y
 NICE_SCALES = [1, 2, 2.5, 4, 5, 8, 10, 20]
 
+# krzyz osi otworu w kolorze 6 (R1): LINE wycentrowana na srodku CIRCLE,
+# dlugosc ~srednica. Progi zmierzone (realne krzyze L/D=1.14..3.57, dm/r<=0.29;
+# realne giecia DASHDOT/PHANTOM: 210 szt., ZADNE nie przechodzi przez srodek
+# okregu; rozbite kreski przerywanych linii maja L/D<0.5 - zostaja w bend).
+AXIS_CROSS_MID = 0.5    # midpoint linii <= 0.5*r od srodka okregu (krzyz = symetryczny)
+AXIS_CROSS_LMIN = 0.8   # L >= 0.8*srednicy (odcina kreski rozbitych linii przerywanych)
+AXIS_CROSS_LMAX = 4.0   # L <= 4.0*srednicy (os symetrii czesci przez otwor NIE jest krzyzem)
+AXIS_CROSS_RMIN = 0.3   # mikro-okregi (kropki znacznikow) ponizej r=0.3 ignorowane
+
 # detektor rozwiniecia (anty-izometryk) lezy w ../kontrola. Importujemy LENIWIE,
 # by uniknac cyklu (detektor importuje ten modul) - dopiero przy pierwszym uzyciu
 # rankingu. Bootstrap sciezki, by dzialalo niezaleznie od cwd wolajacego.
@@ -218,9 +227,42 @@ def match_scale(cluster, dim_max, dim_min):
     return scale, rel
 
 
+def _axis_cross_kolor6(e, kola):
+    """Czy kolor-6 LINE to KRZYZ OSI OTWORU (a nie linia giecia)?
+    Test GEOMETRYCZNY, nie sama dlugosc: midpoint linii wycentrowany na srodku
+    CIRCLE (krzyz rysowany symetrycznie, snap do srodka) + dlugosc ~srednica
+    (os wystaje poza otwor: zmierzone L/D=1.14..3.57). Sama dlugosc NIE wystarcza:
+    konwersja GstarCAD rozbija linie przerywane na kreski <3mm (lancuchy wspolliniowe
+    o span 100+mm zmierzone) - krotkie kreski rozbitego GIECIA musza zostac w bend."""
+    if e.dxftype() != "LINE" or not kola:
+        return False
+    s, en = e.dxf.start, e.dxf.end
+    L = math.hypot(en.x - s.x, en.y - s.y)
+    if L < 1e-9:
+        return False
+    mx, my = (s.x + en.x) / 2, (s.y + en.y) / 2
+    for cx, cy, r in kola:
+        if math.hypot(mx - cx, my - cy) <= AXIS_CROSS_MID * r:
+            d = 2.0 * r
+            if AXIS_CROSS_LMIN * d <= L <= AXIS_CROSS_LMAX * d:
+                return True
+    return False
+
+
 def partition(ents):
     """Dzieli encje: kontur / osie / kreskowane / linie giecia (DASHDOT) / adnotacje."""
     geom, axis, dashed, bend, annot = [], [], [], [], []
+    # pre-pass: srodki okregow (dowolny kolor/warstwa) do testu krzyza osi kolor-6
+    kola = []
+    for e in ents:
+        if e.dxftype() == "CIRCLE":
+            try:
+                c = e.ocs().to_wcs(e.dxf.center)
+                r = float(e.dxf.radius)
+                if r >= AXIS_CROSS_RMIN:
+                    kola.append((c.x, c.y, r))
+            except Exception:
+                pass
     for e in ents:
         t = e.dxftype()
         if t in ANNOT_TYPES:
@@ -228,11 +270,15 @@ def partition(ents):
         elif t in GEOM_TYPES:
             # KOLOR 6 (magenta) = linia giecia NIEZALEZNIE od linetype - sprawdzamy
             # PRZED linetype, bo giecie bywa rysowane linia CENTER/PHANTOM/MITTE i
-            # gubi sie jako os symetrii (konwencja klienta z CLAUDEv1). Krzyz osi
-            # otworu rozni sie od giecia dlugoscia wzgledem widoku - tu nie kasujemy,
-            # tylko przenosimy na warstwe GIECIE (nie znika z laseru).
+            # gubi sie jako os symetrii (konwencja klienta z CLAUDEv1). WYJATEK (R1):
+            # krzyz osi otworu tez bywa magenta - rozpoznajemy GEOMETRIA (wycentrowany
+            # na srodku okregu, dlugosc ~srednica) i odsylamy do axis; cala reszta
+            # kolor-6 na warstwe GIECIE (nie znika z laseru).
             if e.dxf.color == 6:
-                bend.append(e)
+                if _axis_cross_kolor6(e, kola):
+                    axis.append(e)
+                else:
+                    bend.append(e)
                 continue
             lt = (e.dxf.linetype or "").upper()
             if lt in AXIS_LINETYPES:
