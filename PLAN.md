@@ -14,14 +14,17 @@
 - ✅ deploy 7 skilli V3 (14 celów, audyt 0 rozjazdów) · destylacja 185 etykiet (138 OK / 47 BŁĄD; #1=obca_geometria 31, w 90% W-D).
 - ✅ audyt ryzyk R1–R4 (`zasady/propozycje/2026-07-08_ryzyka_rankingu_do_naprawy.md`) — R1/R2/R3 ZAMKNIĘTE.
   *(Deploy skilli po redesignie do wykonania: `python zarzadzanie\deploy_skilli.py --wykonaj`.)*
+- ✅ **REALNE ZLECENIE e2e: 38_1847_ZUBEHOR** (94 rysunki / 165 pozycji, Hardox) przez cały tor V3, równolegle 6 workerów, **8,4 min**, core 94/94 OK. **Pierwszy punkt metryki zaufania:** 🟢100 / 🟡54 / 🔴11, **39,4% do przeglądu** (trend `metryka_zaufania.csv` → `38_1847_ZUBEHOR_CALE`). Gwint redesign **zwalidowany bojowo**: 23 gwinty/13 rys. zachowane+żółte. 11 czerwonych = poprawnie ODRZUCONE (6 otwarty kontur→człowiek, 5 dyskwalifikacja bramek — zasada 1). AI-oględziny 5 flag sweepa: **wszystkie fałszywe** (nakładka 100%/braki=0). Raport: `wyniki/38_1847_ZUBEHOR_V3/_ZBIORCZE/PODSUMOWANIE_ZLECENIA.md`; driver `scratchpad/run_zubehor.py`.
+- 🔎 **Znalezisko → propozycja:** sweep `warstwa_geom` zawyża na rysunkach z wymiarami na warstwie geometrii (5/5 flag fałszywych) — `zasady/propozycje/2026-07-08_sweep_warstwa_geom_wymiary.md`.
 
 **Decyzje:** W-D = **OPT-IN, nie inwestujemy** (UWAGA-pass już w W-C, V3 wygrywa 89%; słabość W-D=czyszczenie pitch-circli/gięć).
 
 **BACKLOG (następna sesja, priorytet):**
-1. **Realne zlecenie end-to-end** przez `/dxf-ekstrakcja` + pierwszy punkt metryki zaufania (główna miara) — NASTĘPNE.
+1. **Propozycja sweep `warstwa_geom`** (wyklucz wymiary / degraduj gdy nakładka 100%) — golden ZUBEHOR-fałszywa + strażnik 54_4867; awans przez testy.
 2. Kalibracja typowania na `zasady/przyklady/<typ>/` (Etap 4.3).
 3. Flager pitch-circle (okrąg podziałowy=obca geometria) jako propozycja QC — z lekcji W-D.
-4. Deploy skilli po redesignie gwintu (`deploy_skilli.py --wykonaj`) · R4 (INFO, świadomie odłożone) · pre-existing benchmark_v2 FAIL SL10578806_p4 (osobne).
+4. Infra z runu ZUBEHOR: (a) raport ładuje wykaz RAZ (nie 2× per rysunek); (b) sweep exit-1-na-flagi ≠ FAIL wykonania w `przebieg`; (c) rozważyć `przebieg_zlecenie.py` (parallel+consolidate) na stałe.
+5. Deploy skilli po redesignie gwintu (`deploy_skilli.py --wykonaj`) · R4 (INFO) · pre-existing benchmark_v2 FAIL SL10578806_p4 (osobne).
 
 **Zmiany w drzewie nie-nasze (user commit 8072026):** CLAUDE.md/MEMORY.md/archiwum/UWAGI/ — zacommitowane przez usera.
 
