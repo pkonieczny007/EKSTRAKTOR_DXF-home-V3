@@ -20,6 +20,7 @@
 **Decyzje:** W-D = **OPT-IN, nie inwestujemy** (UWAGA-pass już w W-C, V3 wygrywa 89%; słabość W-D=czyszczenie pitch-circli/gięć).
 
 **BACKLOG (następna sesja, priorytet):**
+0. ⭐ **APLIKACJA SPRAWDZANIA = STANDARD przy tworzeniu DXF** (user 08.07): każde zlecenie ma dostać apkę przeglądu jak `APP_do_porownywania-V2`. Instancja zbudowana i przetestowana: **`C:\Python_CLaude\EKSTRAKTOR_DXF\APP_do_sprawdzania-V3`** (Flask, port 5253) — wiersz=pozycja: **DXF gotowy** (render+otwórz w CAD) · **źródło-region** (conv.dxf przycięty do bboxu, do porównania obok) · **TIF/DWG** (oryginał warsztatowy, otwórz) · **nakładka** wynik-na-źródło · **info z wykazu** (materiał/wymiar wykaz vs DXF/skala/technologia/semafor) · **WERDYKT+UWAGI z autozapisem** do kopii wykazu (`SPRAWDZANIE_*.xlsx`) + backup `werdykty.json` + „Dograj do Excela". Zbudowane: `app.py`, `build_wykaz_sprawdzania.py`, README, start.bat. **DO FORMALIZACJI:** wpiąć generowanie kopii-wykazu-do-sprawdzania + apki jako krok pipeline (przebieg krok „g") / skill `/dxf-sprawdz`, uniwersalne przez CONFIG (WYNIKI+DOK+XLSX). Warunek: user potwierdzi że instancja ZUBEHOR działa dobrze.
 1. **Propozycja sweep `warstwa_geom`** (wyklucz wymiary / degraduj gdy nakładka 100%) — golden ZUBEHOR-fałszywa + strażnik 54_4867; awans przez testy.
 2. Kalibracja typowania na `zasady/przyklady/<typ>/` (Etap 4.3).
 3. Flager pitch-circle (okrąg podziałowy=obca geometria) jako propozycja QC — z lekcji W-D.
