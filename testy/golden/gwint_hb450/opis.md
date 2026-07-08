@@ -31,6 +31,9 @@ bilans_konturow (bramka 5) — na **kazdym materiale**. Zasada: `gwint-okrag-luk
    ta sama falszywa czerwien znika. Materialy ZWYKLE bez gwintu (SL40061302,
    SL40034116) BEZ zmian (thread_skipped=0).
 
-Uwaga: to golden dla **bramki 2/5 (kompletnosc/domkniecie)**, NIE dla transformacji
-gwintu na trudnoscieralnych (ta jest opcjonalna, sterowana `config/gwinty_hardox.yaml`
-i modulem `gwint.transformuj` — tu wzorzec zachowuje gwint jak jest: okrag+luk).
+Uwaga: to golden dla **bramki 2/5 (kompletnosc/domkniecie)** ORAZ dla oznaczania/
+transformacji gwintu (`test_gwint_hardox_transformacja`). Gwint DOMYSLNIE zachowany +
+oznaczony ZOLTO (`gwint.oznacz_gwinty`); transformacja OPCJONALNA (flaga
+--transformuj-gwint), sterowana `config/gwinty.yaml` (dwuklasowa: trudnoscieralne
+M12=10.6 / zwykle M12=10.2) i modulem `gwint.transformuj` — tu wzorzec zachowuje gwint
+jak jest: okrag+luk.

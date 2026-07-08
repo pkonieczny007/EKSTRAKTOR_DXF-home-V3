@@ -33,11 +33,13 @@ gotowe `_conv.dxf` - konwersja DWG->DXF to jego krok, zasada 15).
    -> `<zeinr>_ocena.csv` + wyjsciowe DXF + `warianty/`.
 5. **RAPORT + wykaz**: `python produkcja\raport.py <folder_wynikow> <rysunek_conv.dxf>
    --wykaz <wykaz.xlsx>` -> `<zeinr>_podsumowanie.csv` + KOPIA wykazu ze statusami
-   (oryginal nietkniety). **GWINT HARDOX (auto, gdy --wykaz)**: dla materialu
-   trudnoscieralnego (HB4xx/HARDOX/XAR/RAEX z Bezeichnung) gwinty transformowane w
-   wyjsciowym DXF - luk usuniety, okrag powiekszony na CZERWONO wg
-   `config/gwinty_hardox.yaml` (M12=10.6); nieznane M -> gwint ZOSTAJE + status ZOLTY
-   (uzupelnij tablice); material zwykly -> bez zmian. Czerwony okrag = obejrzyj.
+   (oryginal nietkniety). **GWINT - DOMYSLNIE ZACHOWANY (kazdy material)**: wykryty
+   gwint (okrag+luk ~270 st) zostaje, koloruje sie na ZOLTO + nota 'gwint MX', status
+   pozycji obniza do 🟡 (jak fazowanie - do decyzji operatora, nie zgadujemy srednicy
+   palenia). **Transformacja TYLKO na wyrazne zadanie**: dodaj flage
+   `--transformuj-gwint` -> luk usuniety, okrag powiekszony na CZERWONO wg KLASY
+   materialu (`config/gwinty.yaml`: trudnoscieralne HB4xx M12=10.6 / zwykle S235/S355
+   M12=10.2; klasa z Bezeichnung, wymaga --wykaz). Nieznana wartosc -> zostaje ZOLTY.
 6. **SPRAWDZANIE AI** (kompletnosc): `python sprawdzanie\ai\sprawdz_folder.py
    <folder_wynikow> <rysunek_conv.dxf>` -> nakladki + flagi. **OBEJRZYJ 100% flag**
    (`sprawdzanie_ai/*_nakladka.png`) od najwiekszych roznic - zakreslenia czerwone
@@ -54,8 +56,9 @@ gotowe `_conv.dxf` - konwersja DWG->DXF to jego krok, zasada 15).
 - Linia giecia = kolor 6 (magenta); geometria bywa na kolorze 2/4/7/warstwie - nie zakladac 7.
 - Lustra P/L: druga poz. o tych samych wymiarach = para (odbijaj); asymetria = 🟡.
 - Otwory wspolsrodkowe (fertzing) = 1 cecha; gwint = okrag + luk ~270 (nie dedup, nie otwarty).
-- Hardox/trudnoscieralne (HB4xx): gwint TRANSFORMOWANY (luk out, okrag +czerwony wg tablicy)
-  tylko na tym materiale; zwykla blacha zachowuje gwint (okrag+luk, opis M w wykazie).
+- Gwint DOMYSLNIE zachowany (okrag+luk) + ZOLTY 'do decyzji' na KAZDYM materiale (nie
+  zgadujemy srednicy palenia). Transformacja (luk out, okrag +czerwony) TYLKO na zadanie
+  operatora (--transformuj-gwint), srednica wg klasy: Hardox/HB4xx M12->10.6, zwykla M12->10.2.
 - Zgodny wymiar NIE dowodzi kompletnosci (sweep-vs-zrodlo obowiazkowy).
 
 ## Uwagi

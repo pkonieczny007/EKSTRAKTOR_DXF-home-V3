@@ -10,18 +10,18 @@
 - ✅ **R1** (silnik-w-a v1.1) — `partition()` krzyż osi kolor-6→axis (test geometryczny, nie długość; fable 84k encji). Golden `R1_kolor6_krzyz_osi_vs_giecie`, `test_r1`. Realnie SL40081914: 48 fałszywych krzyży z GIECIE, 0 zgubionej geometrii.
 - ✅ **R3** (v1.2) — awaryjny wybór widoku = największy nie-izometryczny (`_pick_fallback_geo`); naprawia 47020 (40×16→62×53), 652 (22×22→281×44). `test_r3`.
 - ✅ **R2** (v1.3) — adnotacja gięcia +2→najbliższy klaster (`_bend_annot_nearest`, detektor); izometryki nietknięte. `test_r2`.
-- ✅ **GWINT HARDOX** (gwint v1.1, raport v1.3) — `zastosuj_do_pliku` wpięte w `raport.scal(--wykaz)`: trudnościeralne→łuk out/okrąg+CZERWONY wg `config/gwinty_hardox.yaml` (M12=10,6), nieznane M→zostaw+ŻÓŁTY, zwykłe→no-op. Golden `gwint_hb450`, `test_gwint_hardox_transformacja` 17/17.
+- ✅ **GWINT REDESIGN** (gwint v1.2, raport v1.4, dxf-ekstrakcja v1.2 — **zastępuje** wcześniejszy auto-transform be604ba) — DOMYŚLNIE (każdy materiał) gwint **ZACHOWANY** + oznaczony na ŻÓŁTO (`oznacz_gwinty`, status 🟡, nota „gwint MX", jak fazowanie). Transformacja (łuk out, okrąg+CZERWONY) **TYLKO na żądanie** flagą `--transformuj-gwint`, średnica wg **klasy materiału** (`config/gwinty.yaml`: trudnościeralne M12→**10,6** / zwykłe M12→**10,2**, oba potwierdzone). Nieznana wartość→zostaje ŻÓŁTY. `test_gwint_hardox_transformacja` 27/27, `test_gwint` 28/28, `test_raport` 44/0, benchmark_v3 0 regresji.
 - ✅ deploy 7 skilli V3 (14 celów, audyt 0 rozjazdów) · destylacja 185 etykiet (138 OK / 47 BŁĄD; #1=obca_geometria 31, w 90% W-D).
 - ✅ audyt ryzyk R1–R4 (`zasady/propozycje/2026-07-08_ryzyka_rankingu_do_naprawy.md`) — R1/R2/R3 ZAMKNIĘTE.
+  *(Deploy skilli po redesignie do wykonania: `python zarzadzanie\deploy_skilli.py --wykonaj`.)*
 
 **Decyzje:** W-D = **OPT-IN, nie inwestujemy** (UWAGA-pass już w W-C, V3 wygrywa 89%; słabość W-D=czyszczenie pitch-circli/gięć).
 
 **BACKLOG (następna sesja, priorytet):**
-1. 🔴 **GWINT REDESIGN** (user 08.07, NIEDOKOŃCZONE — wartość POTWIERDZONA): domyślnie **ZACHOWAJ gwint** (okrąg+łuk) + oznacz na ŻÓŁTO (kolor 2) + uwaga „gwint MX" + status 🟡 (jak fazowanie); transformacja TYLKO na żądanie (flaga `--transformuj-gwint`): M12→CZERWONY. **Wartości M12 (potwierdzone user 08.07): Hardox/trudnościeralne → 10,6; zwykła stal S235/S355 → 10,2** (per klasa materiału → tablica config rozbita na `trudnoscieralne`/`zwykle`). To ODWRACA obecny auto-transform (be604ba) na keep+żółty; transform staje się opt-in. Do zrobienia: `oznacz_gwinty()` (żółty+flaga, każdy materiał) w raport.scal domyślnie; `zastosuj_do_pliku` tylko pod flagą, wartość wg klasy; golden+test; regresja+benchmark.
-2. Realne zlecenie end-to-end przez `/dxf-ekstrakcja` + pierwszy punkt metryki zaufania (główna miara).
-3. Kalibracja typowania na `zasady/przyklady/<typ>/` (Etap 4.3).
-4. Flager pitch-circle (okrąg podziałowy=obca geometria) jako propozycja QC — z lekcji W-D.
-5. R4 (INFO, świadomie odłożone) · gwint tablica S235/S355 · pre-existing benchmark_v2 FAIL SL10578806_p4 (osobne).
+1. **Realne zlecenie end-to-end** przez `/dxf-ekstrakcja` + pierwszy punkt metryki zaufania (główna miara) — NASTĘPNE.
+2. Kalibracja typowania na `zasady/przyklady/<typ>/` (Etap 4.3).
+3. Flager pitch-circle (okrąg podziałowy=obca geometria) jako propozycja QC — z lekcji W-D.
+4. Deploy skilli po redesignie gwintu (`deploy_skilli.py --wykonaj`) · R4 (INFO, świadomie odłożone) · pre-existing benchmark_v2 FAIL SL10578806_p4 (osobne).
 
 **Zmiany w drzewie nie-nasze (user commit 8072026):** CLAUDE.md/MEMORY.md/archiwum/UWAGI/ — zacommitowane przez usera.
 

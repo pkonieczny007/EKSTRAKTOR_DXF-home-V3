@@ -24,8 +24,10 @@ Uzycie:
   python produkcja\\raport.py <folder_wynikow>
   python produkcja\\raport.py <folder_wynikow> <rysunek_conv.dxf>          # + technologia
   python produkcja\\raport.py <folder_wynikow> [<conv.dxf>] --wykaz <wykaz.xlsx> [--out <plik.xlsx>]
+  # gwint: DOMYSLNIE zachowany + oznaczony ZOLTO (status 🟡). Transformacja na zadanie:
+  python produkcja\\raport.py <folder_wynikow> --wykaz <wykaz.xlsx> --transformuj-gwint
 
-Po zmianie tutaj: python testy\\test_raport.py (PASS).
+Po zmianie tutaj: python testy\\test_raport.py + python testy\\test_gwint_hardox_transformacja.py (PASS).
 """
 import csv
 import shutil
@@ -45,14 +47,15 @@ except Exception as _e:  # pragma: no cover
     _fazowanie = None
     print(f"[RAPORT] fazowanie niedostepne ({_e}) - raport bez oznaczania fazy")
 
-# transformacja gwintow na materiale TRUDNOSCIERALNYM (Hardox) - tylko gdy podany
-# --wykaz (material per pozycja) i tablica config/gwinty_hardox.yaml ma wartosci.
+# gwint: DOMYSLNIE oznaczany na ZOLTO (zachowany, do decyzji - jak fazowanie);
+# transformacja (luk out, okrag +czerwony wg klasy materialu) TYLKO na zadanie
+# (--transformuj-gwint + --wykaz dla klasy materialu; tablica config/gwinty.yaml).
 try:
     import gwint as _gwint
 except Exception as _e:  # pragma: no cover
     _gwint = None
-    print(f"[RAPORT] gwint niedostepny ({_e}) - raport bez transformacji Hardox")
-_TABLICA_GWINT = Path(__file__).resolve().parent.parent / "config" / "gwinty_hardox.yaml"
+    print(f"[RAPORT] gwint niedostepny ({_e}) - raport bez oznaczania gwintow")
+_TABLICA_GWINT = Path(__file__).resolve().parent.parent / "config" / "gwinty.yaml"
 
 # semafor -> kolor wypelnienia (jak w Excelu: zielony/zolty/czerwony)
 SEM_KOLOR = {"zielony": "C6EFCE", "zolty": "FFEB9C", "czerwony": "FFC7CE"}
@@ -216,11 +219,13 @@ def _material_map(wykaz_path, zeinr):
         return {}
 
 
-def scal(folder_wynikow, rysunek=None, wykaz=None):
+def scal(folder_wynikow, rysunek=None, wykaz=None, transformuj_gwint=False):
     """Scala ocene wariantow + raport silnika + realny pomiar DXF w rekordy per pozycja.
     Zwraca (zeinr, rekordy). rysunek (conv.dxf) opcjonalny: dokłada technologia.
-    wykaz opcjonalny: wlacza transformacje gwintow Hardox (material trudnoscieralny ->
-    luk out, okrag powiekszony CZERWONY wg config/gwinty_hardox.yaml; status min. ZOLTY)."""
+    Gwint: DOMYSLNIE zachowany + oznaczony na ZOLTO (status min. 🟡, jak fazowanie).
+    transformuj_gwint=True (flaga --transformuj-gwint): luk out, okrag powiekszony
+    CZERWONY wg klasy materialu (trudnoscieralne/zwykle, config/gwinty.yaml);
+    klasa z Bezeichnung (wymaga --wykaz - bez niego wszystko traktowane jak 'zwykle')."""
     folder = Path(folder_wynikow)
     if not folder.is_dir():
         raise NotADirectoryError(folder)
@@ -248,15 +253,20 @@ def scal(folder_wynikow, rysunek=None, wykaz=None):
         except Exception as e:
             print(f"[RAPORT] technologia pominieta - nie wczytano {rysunek} ({e})")
 
-    # gwint Hardox: material per pozycja (z wykazu) + tablica srednic - tylko gdy --wykaz.
+    # gwint: material per pozycja (z wykazu) do wyboru klasy przy transformacji.
+    # Tablica srednic wczytywana TYLKO gdy transformuj_gwint (domyslnie sam marker).
     mat_map, tablica_gwint = {}, None
-    if wykaz and _gwint is not None:
-        mat_map = _material_map(wykaz, zeinr)
-        if mat_map:
+    if _gwint is not None:
+        if wykaz:
+            mat_map = _material_map(wykaz, zeinr)
+        if transformuj_gwint:
             try:
                 tablica_gwint = _gwint.wczytaj_tablice(_TABLICA_GWINT)
             except Exception as e:
                 print(f"[RAPORT] tablica gwintow niewczytana ({e}) - transformacja pominieta (GLOSNO)")
+            if not mat_map:
+                print("[RAPORT] --transformuj-gwint bez --wykaz: klasa materialu = 'zwykle' "
+                      "dla wszystkich pozycji (GLOSNO)")
 
     rekordy = []
     for b in baza:
@@ -309,16 +319,22 @@ def scal(folder_wynikow, rysunek=None, wykaz=None):
             except Exception as e:
                 print(f"[RAPORT] fazowanie pominiete ({dxf_path}): {e} (GLOSNO)")
 
-        # gwint Hardox: material trudnoscieralny -> luk out, okrag powiekszony CZERWONY
-        # wg tablicy (nieznana wartosc -> zostaw + status ZOLTY). Zwykly material -> no-op.
-        if tablica_gwint and mat_map and dxf_path and Path(dxf_path).exists():
+        # gwint: DOMYSLNIE oznacz na ZOLTO (zachowany, do decyzji - jak fazowanie);
+        # --transformuj-gwint -> luk out, okrag +czerwony wg klasy materialu (nieznana
+        # wartosc -> zostaje zolty). Status tylko obnizany (zasada 5).
+        if _gwint is not None and dxf_path and Path(dxf_path).exists():
             try:
-                n_gw, gw_kom, gw_stat = _gwint.zastosuj_do_pliku(
-                    dxf_path, mat_map.get(posn, ""), tablica_gwint)
+                if transformuj_gwint and tablica_gwint is not None:
+                    n_gw, gw_kom, gw_stat = _gwint.zastosuj_do_pliku(
+                        dxf_path, mat_map.get(posn, ""), tablica_gwint)
+                    tech_tag = "gwint"
+                else:
+                    n_gw, gw_kom, gw_stat = _gwint.oznacz_gwinty(dxf_path)
+                    tech_tag = "gwint?"   # ? = zachowany, do decyzji operatora
                 if gw_kom:
                     uwagi = "; ".join(x for x in (uwagi, gw_kom) if x)
-                    technologia = (f"{technologia}+gwint"
-                                   if technologia and technologia != "brak" else "gwint")
+                    technologia = (f"{technologia}+{tech_tag}"
+                                   if technologia and technologia != "brak" else tech_tag)
                 if gw_stat == "zolty" and semafor == "zielony":
                     semafor = "zolty"   # zasada 5: status tylko obnizany
             except Exception as e:
@@ -470,6 +486,10 @@ def main(argv):
     wykaz = None
     out = None
     rest = argv[1:]
+    transformuj_gwint = False
+    if "--transformuj-gwint" in rest:
+        rest = [a for a in rest if a != "--transformuj-gwint"]
+        transformuj_gwint = True
     if "--wykaz" in rest:
         i = rest.index("--wykaz")
         wykaz = rest[i + 1]
@@ -481,7 +501,7 @@ def main(argv):
     if rest and Path(rest[0]).suffix.lower() == ".dxf":
         rysunek = rest[0]
 
-    zeinr, rekordy = scal(folder, rysunek, wykaz)
+    zeinr, rekordy = scal(folder, rysunek, wykaz, transformuj_gwint)
     if not rekordy:
         print(f"[RAPORT] brak ocena.csv/raport.csv w {folder}")
         return 1

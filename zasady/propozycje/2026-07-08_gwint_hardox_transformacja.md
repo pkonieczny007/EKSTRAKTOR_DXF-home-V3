@@ -1,14 +1,19 @@
 # Propozycja: Hardoxy (HB400/HB450, trudnoscieralne) - transformacja GWINTOW przy ekstrakcji
 
 - **Data / autor:** 2026-07-08, operator (plan podany wprost) + AI (spisanie)
-- **Status:** ✅ WPIETE 2026-07-08 (gwint v1.1, raport-zlecenia v1.3). `gwint.zastosuj_do_pliku`
-  wpiete w `raport.scal(--wykaz)`: czyta Bezeichnung per pozycja (`_material_map`), dla materialu
-  trudnoscieralnego transformuje WYJSCIOWY DXF (luk out, okrag powiekszony CZERWONY wg
-  `config/gwinty_hardox.yaml`, M12=10.6 potwierdzone), nieznana wartosc -> zostaw + status ZOLTY,
-  material zwykly -> NO-OP. Golden `gwint_hb450` (8x M12 HB450). Test `test_gwint_hardox_transformacja`
-  (17 asercji: unit zastosuj_do_pliku + integracja scal). Bramka: regresja 43/43, test_raport,
-  benchmark_v3 0 regresji. POZOSTALE wartosci tablicy (M3..M24 poza M12) = null -> operator uzupelni.
-  (historia: propozycja -> prototyp fable -> golden -> testy -> merge)
+- **Status:** ✅ WPIETE + 🔄 ZREDESIGNOWANE 2026-07-08 (gwint v1.2, raport-zlecenia v1.4,
+  dxf-ekstrakcja v1.2). **REDESIGN (operator 08.07):** transformacja NIE jest juz domyslna.
+  DOMYSLNIE (kazdy material) gwint ZOSTAJE i jest oznaczany na ZOLTO (`gwint.oznacz_gwinty`,
+  status pozycji 🟡, nota 'gwint MX' - jak fazowanie; nie zgadujemy srednicy palenia).
+  Transformacja (`gwint.zastosuj_do_pliku`, luk out, okrag +CZERWONY) TYLKO na wyrazne zadanie:
+  flaga `--transformuj-gwint` / `scal(...,transformuj_gwint=True)`. Srednica wg KLASY materialu
+  (`config/gwinty.yaml`, dwuklasowa): trudnoscieralne HB4xx **M12->10.6**, zwykle S235/S355
+  **M12->10.2** (oba POTWIERDZONE 08.07). Klasa z Bezeichnung (`_material_map`); bez --wykaz
+  klasa='zwykle' (GLOSNO). Nieznana wartosc -> zostaje ZOLTY. Golden `gwint_hb450` (8x M12 HB450).
+  Testy: `test_gwint_hardox_transformacja` (27 asercji: default oznacz + transform 10.6/10.2 +
+  integracja scal bez/z flaga) + `test_gwint` (28: detekcja/bramka2/bramka5). Bramka: regresja 43/43,
+  testy_v2 35/35, test_raport 44/0, benchmark_v3 0 regresji.
+  (historia: propozycja -> prototyp fable -> golden -> transform-auto -> REDESIGN keep+zolty/transform-opt-in)
 - **Doprecyzowuje:** [[otwarte-kontury-droga-blacha-do-czlowieka]] (wczesniejsza decyzja
   "otwarty kontur na Hardoxie -> czlowiek" zostaje TYLKO dla realnie otwartych obrysow;
   gwinty przestaja byc powodem czerwieni) oraz [[gwint-okrag-luk-dimension]].

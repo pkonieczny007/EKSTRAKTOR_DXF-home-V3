@@ -1,0 +1,44 @@
+# Srednice palenia gwintow (okrag palony na miejsce wiercenia pod gwint).
+#
+# DOMYSLNIE gwint jest ZACHOWANY (okrag+luk) i oznaczony na ZOLTO -> status 🟡
+# do decyzji operatora (jak fazowanie). Ta tablica jest uzywana WYLACZNIE przy
+# transformacji NA ZADANIE (flaga --transformuj-gwint): luk usuniety, okrag
+# powiekszony do ponizszej srednicy, kolor CZERWONY (1).
+#
+# DWIE KLASY MATERIALU - ten sam gwint, INNA srednica palenia:
+#   trudnoscieralne (Hardox / HB4xx / XAR / RAEX) : M12 -> 10.6
+#   zwykle          (S235 / S355 / ...)           : M12 -> 10.2
+#
+# WARTOSCI WPISUJE OPERATOR (zasada zelazna 1: nie zgadujemy srednic).
+# null = brak wartosci => nie transformuj, zostaw gwint (okrag+luk) + status ZOLTY
+# z powodem "MX bez wartosci w tablicy" (kotwica operatora do uzupelnienia).
+
+trudnoscieralne:
+  M3: null
+  M4: null
+  M5: null
+  M6: null
+  M8: null
+  M10: null
+  M12: 10.6      # POTWIERDZONE (operator 2026-07-08): Hardox/HB4xx M12 -> o10.6 CZERWONY
+  M14: null
+  M16: null
+  M18: null
+  M20: null
+  M22: null
+  M24: null
+
+zwykle:
+  M3: null
+  M4: null
+  M5: null
+  M6: null
+  M8: null
+  M10: null
+  M12: 10.2      # POTWIERDZONE (operator 2026-07-08): stal zwykla S235/S355 M12 -> o10.2 CZERWONY
+  M14: null
+  M16: null
+  M18: null
+  M20: null
+  M22: null
+  M24: null

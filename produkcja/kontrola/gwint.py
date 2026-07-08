@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 """Gwinty na materialach trudnoscieralnych (Hardox / HB4xx / XAR / RAEX).
 
-DOCELOWO: produkcja/kontrola/gwint.py + config/gwinty_hardox.yaml
+DOCELOWO: produkcja/kontrola/gwint.py + config/gwinty.yaml (dwuklasowa)
 (przenosi orkiestrator przez system testowy; ten plik to prototyp fable).
 
-Zasada (operator 2026-07-08, zasady/propozycje/2026-07-08_gwint_hardox_transformacja.md):
-- material trudnoscieralny: wyciagac JAK NORMALNE; w miejscu gwintu
-  (okrag wiercenia + wspolsrodkowy luk ~270 st) LUK USUN, OKRAG POWIEKSZ
-  wg tablicy (config/gwinty_hardox.yaml), zmieniony okrag na CZERWONO (kolor 1);
-- brak wartosci w tablicy / M nierozpoznane -> ZOSTAW luk+okrag (kotwica
-  operatora) + status pozycji minimum ZOLTY;
-- material zwykly: BEZ zmian (gwint-okrag-luk-dimension.md: zostaw oba);
+Zasada (operator 2026-07-08 REDESIGN):
+- DOMYSLNIE (kazdy material): gwint ZACHOWANY (okrag+luk), oznaczony na ZOLTO
+  (kolor 2) -> status pozycji minimum ZOLTY, nota "gwint MX" (jak fazowanie).
+  NIE transformujemy bez wyraznej prosby operatora (oznacz_gwinty).
+- NA ZADANIE (flaga --transformuj-gwint): w miejscu gwintu LUK USUN, OKRAG
+  POWIEKSZ wg tablicy dwuklasowej (config/gwinty.yaml: trudnoscieralne vs zwykle;
+  M12 -> 10.6 Hardox / 10.2 zwykla), zmieniony okrag na CZERWONO (kolor 1);
+  klasa materialu z Bezeichnung (czy_trudnoscieralny); zastosuj_do_pliku.
+- brak wartosci w tablicy / M nierozpoznane -> ZOSTAW luk+okrag oznaczony ZOLTO
+  (kotwica operatora) + status pozycji minimum ZOLTY (tez przy transformacji).
 - luk gwintu NIGDY nie liczy sie do otwartych koncow bramki 2 (zaden material).
 
 Sygnatura gwintu (deterministyczna; zmierzone 0 falszywych na 88 plikach +
@@ -34,6 +37,10 @@ CENTER_TOL = 0.3          # mm, wspolsrodkowosc okrag-luk
 SAG = 0.05                # flattening dla open_ends
 END_TOL = 0.05            # mm, parowanie koncow (jak bramka 2)
 
+# --- oznaczanie / klasy materialu ---
+KOLOR_UWAGA = 2          # zolty: gwint zachowany "do decyzji" (jak fazowanie)
+KLASY = ("trudnoscieralne", "zwykle")   # klasy tablicy srednic palenia
+
 # --- rozmiar M z nominalu luku (tylko pliki 1:1!) ---
 M_NOMINALY = (3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 14.0,
               16.0, 18.0, 20.0, 22.0, 24.0)
@@ -47,6 +54,13 @@ def czy_trudnoscieralny(text):
     """True gdy tekst (Bezeichnung/gatunek z wykazu) wskazuje material
     trudnoscieralny (Hardox HB400/HB450, XAR, RAEX)."""
     return bool(MATERIAL_RE.search(str(text or "")))
+
+
+def klasa_materialu(material):
+    """Klasa tablicy srednic palenia: 'trudnoscieralne' (Hardox/HB4xx/XAR/RAEX)
+    albo 'zwykle' (S235/S355/pusty). Nieznany material -> 'zwykle' (bezpieczna
+    wartosc mniejsza, ale operator i tak potwierdza zolty/czerwony)."""
+    return "trudnoscieralne" if czy_trudnoscieralny(material) else "zwykle"
 
 
 def _arc_span(a):
@@ -106,18 +120,26 @@ def m_z_luku(r_luk, tol=M_TOL):
 
 
 def wczytaj_tablice(path):
-    """Tablica srednic palenia: config/gwinty_hardox.yaml -> dict {'M6': 6.6|None}.
-    Wartosci null = operator jeszcze nie wpisal = gwint zostaje nietkniety."""
+    """Tablica srednic palenia (dwuklasowa): config/gwinty.yaml ->
+    {'trudnoscieralne': {'M12': 10.6, ...}, 'zwykle': {'M12': 10.2, ...}}.
+    Wartosci null = operator jeszcze nie wpisal = gwint zostaje ZOLTY (nietkniety).
+    Odporne na stary plaski format ({M: v}) - wtedy ta sama tablica dla obu klas."""
     import yaml
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
-    out = {}
-    for k, v in data.items():
-        ks = str(k).upper().strip()
-        if not ks.startswith("M"):
-            continue
-        out[ks] = None if v is None else float(v)
-    return out
+
+    def _plaska(d):
+        out = {}
+        for k, v in (d or {}).items():
+            ks = str(k).upper().strip()
+            if ks.startswith("M"):
+                out[ks] = None if v is None else float(v)
+        return out
+
+    if any(kl in data for kl in KLASY):
+        return {kl: _plaska(data.get(kl)) for kl in KLASY}
+    plaska = _plaska(data)                 # wsteczna zgodnosc: plaski plik
+    return {kl: dict(plaska) for kl in KLASY}
 
 
 def transformuj(msp, tablica):
@@ -178,26 +200,71 @@ def status_po_transformacji(zmiany):
     return "zolty" if any(z["akcja"] == "zostaw" for z in zmiany) else None
 
 
-def zastosuj_do_pliku(dxf_path, material, tablica):
-    """Post-process WYJSCIOWEGO DXF (1:1): transformacja gwintow dla materialu
-    TRUDNOSCIERALNEGO wg tablicy (luk out, okrag powiekszony CZERWONY) + ZAPIS pliku.
-    Na materiale ZWYKLYM NIC nie robi (gwint zostaje okrag+luk - gwint-okrag-luk-dimension).
+def _oznacz_na_zolto(msp):
+    """Przekolorowuje wykryte gwinty (luk+okrag) na ZOLTO (kolor 2) - marker
+    "do decyzji", jak fazowanie. NIE transformuje, NIE usuwa. Zwraca Counter
+    {M: liczba} wykrytych gwintow (M? gdy srednica luku poza nominalami)."""
+    from collections import Counter
+    _, gwinty = thread_arcs(msp)
+    liczby = Counter()
+    for g in gwinty:
+        g["arc"].dxf.color = KOLOR_UWAGA
+        g["circle"].dxf.color = KOLOR_UWAGA
+        liczby[m_z_luku(g["r_luk"]) or "M?"] += 1
+    return liczby
+
+
+def _komentarz_oznacz(liczby):
+    czesci = ", ".join("%s x%d" % (m, n) if n > 1 else m
+                       for m, n in sorted(liczby.items()))
+    return "gwint %s (zachowany - do decyzji: srednica palenia)" % czesci
+
+
+def oznacz_gwinty(dxf_path):
+    """DOMYSLNE zachowanie (KAZDY material): wykryj gwinty w WYJSCIOWYM DXF (1:1),
+    przekoloruj luk+okrag na ZOLTO (kolor 2) i ZAPISZ plik. Gwint ZOSTAJE
+    (okrag+luk); operator decyduje pozniej (opcjonalnie --transformuj-gwint).
+
+    Zwraca (n_gwintow, komentarz, status_min):
+      n_gwintow  - ile gwintow oznaczono (plik zapisany tylko gdy >0);
+      komentarz  - 'gwint M12 x8 (zachowany...)' / '';
+      status_min - 'zolty' gdy sa gwinty, inaczej None.
+    Bezpieczne: brak gwintow => (0, '', None), plik nietkniety."""
+    import ezdxf
+    doc = ezdxf.readfile(str(dxf_path))
+    liczby = _oznacz_na_zolto(doc.modelspace())
+    if not liczby:
+        return 0, "", None
+    doc.saveas(str(dxf_path))
+    return sum(liczby.values()), _komentarz_oznacz(liczby), "zolty"
+
+
+def zastosuj_do_pliku(dxf_path, material, tablice):
+    """NA ZADANIE (flaga --transformuj-gwint): transformacja gwintow w WYJSCIOWYM
+    DXF (1:1) wg KLASY materialu (trudnoscieralne / zwykle) - luk out, okrag
+    powiekszony do srednicy palenia, CZERWONY (1). Gwinty bez wartosci w tablicy
+    ZOSTAJA oznaczone na ZOLTO (kotwica operatora). ZAPIS pliku.
+
+    tablice = tablica DWUKLASOWA z wczytaj_tablice ({'trudnoscieralne': {...},
+    'zwykle': {...}}); klasa wybrana z materialu (Bezeichnung).
 
     Zwraca (n_zmienione, komentarz, status_min):
-      n_zmienione - ile gwintow faktycznie powiekszono (plik zapisany tylko gdy >0);
-      komentarz    - opis do uwag ('gwint M12 -> o10.6 (zmieniony); M8 bez wartosci...') / '';
+      n_zmienione - ile gwintow powiekszono (na czerwono);
+      komentarz    - opis do uwag ('gwint M12 -> o10.6 (zmieniony); ...') / '';
       status_min   - 'zolty' gdy jakikolwiek gwint zostal (bez wartosci/M?/anomalia), else None.
-    Bezpieczne: material zwykly / brak gwintow / pusta tablica => (0, '', None), plik nietkniety."""
+    Bezpieczne: brak gwintow => (0, '', None), plik nietkniety."""
     import ezdxf
-    if not czy_trudnoscieralny(material):
-        return 0, "", None
+    tablica = (tablice or {}).get(klasa_materialu(material), {})
     doc = ezdxf.readfile(str(dxf_path))
-    zmiany = transformuj(doc.modelspace(), tablica or {})
+    msp = doc.modelspace()
+    zmiany = transformuj(msp, tablica)
     if not zmiany:
         return 0, "", None
     n_zmienione = sum(1 for z in zmiany if z["akcja"] == "zmieniony")
-    if n_zmienione:
-        doc.saveas(str(dxf_path))   # zapis tylko gdy realnie cos zmieniono
+    # gwinty ZOSTAWIONE (bez wartosci) -> oznacz ZOLTO (transformowane maja
+    # skasowany luk, wiec thread_arcs ich nie wykryje - kolorujemy tylko resztki)
+    _oznacz_na_zolto(msp)
+    doc.saveas(str(dxf_path))
     komentarz = "; ".join(z["powod"] for z in zmiany)
     return n_zmienione, komentarz, status_po_transformacji(zmiany)
 

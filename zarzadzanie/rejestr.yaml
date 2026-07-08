@@ -86,9 +86,9 @@ narzedzia:
 
   - nazwa: dxf-ekstrakcja
     typ: skill
-    wersja: "1.1"
+    wersja: "1.2"
     status: dziala
-    opis: "PELNY tor produkcyjny V3 na zleceniu: recall wiedzy -> typowanie(profil) -> orkiestrator (W-A/W-B/W-C+ocena) -> raport+wykaz -> sprawdz AI (nakladki+flagi 100%) -> galeria czlowieka -> metryka. NOWY skill V3 OBOK /wyciagnij-dxf (V1/V2) - nie podmienia (decyzja usera 06.07). v1.1 (08.07): opisany krok GWINT HARDOX (auto w raport --wykaz: trudnoscieralne -> luk out/okrag +czerwony wg tablicy, nieznane M -> zolty) + regula domenowa Hardox. Deploy 08.07 (14 celow OK)"
+    opis: "PELNY tor produkcyjny V3 na zleceniu: recall wiedzy -> typowanie(profil) -> orkiestrator (W-A/W-B/W-C+ocena) -> raport+wykaz -> sprawdz AI (nakladki+flagi 100%) -> galeria czlowieka -> metryka. NOWY skill V3 OBOK /wyciagnij-dxf (V1/V2) - nie podmienia (decyzja usera 06.07). v1.2 (08.07 REDESIGN): krok GWINT - DOMYSLNIE gwint zachowany + oznaczony ZOLTO (status 🟡, jak fazowanie); transformacja (luk out/okrag +czerwony wg klasy materialu) TYLKO na zadanie (--transformuj-gwint) + regula domenowa. Deploy do wykonania po zmianie"
     instalacje:
       - "~/.claude/skills/dxf-ekstrakcja"
       - "\\\\Qnap-energo\\baza\\.data\\SecondBrain\\03_Zasoby\\Skille\\dxf-ekstrakcja"
@@ -178,9 +178,9 @@ narzedzia:
 
   - nazwa: raport-zlecenia
     typ: aplikacja
-    wersja: "1.3"
+    wersja: "1.4"
     status: dziala
-    opis: "Scalenie zlecenia (etap 3-4): merge ocena.csv (wielowariant) LUB raport.csv (parytet) + raport silnika + REALNY pomiar wyjsciowego DXF -> <zeinr>_podsumowanie.csv; wymiar_dxf vs Abmess (bramka 1 tol=max(1mm,0.2%)) = uwagi_wymiar; technologia G/GS/S/brak z rysunku. Zapis statusow do KOPII wykazu (--wykaz): status kolorem, plik_dxf, technologia, skala, wymiar_dxf_x/y, uwagi_wymiar, uwagi; ORYGINAL NIETKNIETY (pulapka formul). v1.1: wpiete FAZOWANIE. v1.2 (07.07): FIX placementu kolumn (max_column+1). v1.3 (08.07): wpieta TRANSFORMACJA GWINTU HARDOX - scal(--wykaz) czyta Bezeichnung per pozycja (_material_map), i dla materialu trudnoscieralnego wola gwint.zastosuj_do_pliku (luk out, okrag powiekszony CZERWONY wg config/gwinty_hardox.yaml; uwagi+=gwint MX->oY, technologia+=gwint, status obnizony do ZOLTY gdy gwint bez wartosci - zasada 5). Bez --wykaz lub material zwykly => NO-OP (bezpieczne z konstrukcji)"
+    opis: "Scalenie zlecenia (etap 3-4): merge ocena.csv (wielowariant) LUB raport.csv (parytet) + raport silnika + REALNY pomiar wyjsciowego DXF -> <zeinr>_podsumowanie.csv; wymiar_dxf vs Abmess (bramka 1 tol=max(1mm,0.2%)) = uwagi_wymiar; technologia G/GS/S/brak z rysunku. Zapis statusow do KOPII wykazu (--wykaz): status kolorem, plik_dxf, technologia, skala, wymiar_dxf_x/y, uwagi_wymiar, uwagi; ORYGINAL NIETKNIETY (pulapka formul). v1.1: wpiete FAZOWANIE. v1.2 (07.07): FIX placementu kolumn (max_column+1). v1.3: transformacja gwintu Hardox. v1.4 (08.07 REDESIGN): GWINT DOMYSLNIE zachowany - scal wola gwint.oznacz_gwinty na kazdej pozycji (gwint na ZOLTO, status obnizony 🟡, technologia+=gwint?, jak fazowanie). Transformacja (luk out, okrag +czerwony wg klasy materialu z Bezeichnung/_material_map, config/gwinty.yaml) TYLKO pod flaga scal(...,transformuj_gwint=True) / CLI --transformuj-gwint; bez wykazu klasa='zwykle' (GLOSNO). Zasada 5: status tylko obnizany"
     plik: produkcja/raport.py
     test: "python testy\\test_raport.py"
 
@@ -210,9 +210,9 @@ narzedzia:
 
   - nazwa: gwint
     typ: aplikacja
-    wersja: "1.1"
+    wersja: "1.2"
     status: dziala
-    opis: "GWINTY na materialach TRUDNOSCIERALNYCH (Hardox/HB4xx/XAR/RAEX). Sygnatura gwintu: ARC span 200-330 st wspolsrodkowy (<=0.3mm) z CIRCLE, ratio R_luk/R_okr in [1.08,1.30]. (a) thread_arcs -> wpiete w bramke 2/5 (bilans_konturow): luk gwintu ~270 st NIE liczy sie jako otwarty koniec na ZADNYM materiale. (b) v1.1 (08.07): zastosuj_do_pliku(dxf, material, tablica) wpiete w raport.scal(--wykaz) - transformacja WYJSCIOWEGO DXF dla trudnoscieralnych: luk USUN, okrag POWIEKSZ wg config/gwinty_hardox.yaml (M12=10.6 potwierdzone), kolor CZERWONY; nieznana wartosc/M? -> ZOSTAW + status ZOLTY (kotwica operatora); material zwykly -> NO-OP (gwint-okrag-luk zostaje). Golden gwint_hb450 (8x M12 HB450). Rdzen: fable-advisor (0 falszywych na 88 plikach)"
+    opis: "GWINTY (kazdy material). Sygnatura: ARC span 200-330 st wspolsrodkowy (<=0.3mm) z CIRCLE, ratio R_luk/R_okr in [1.08,1.30]. (a) thread_arcs -> wpiete w bramke 2/5 (bilans_konturow): luk gwintu ~270 st NIE liczy sie jako otwarty koniec. (b) v1.2 (08.07 REDESIGN): DOMYSLNIE oznacz_gwinty(dxf) - gwint ZOSTAJE (okrag+luk), przekolorowany na ZOLTO (kolor 2), status pozycji min. 🟡, nota 'gwint MX' (jak fazowanie); wpiete w raport.scal domyslnie na kazdej pozycji. NA ZADANIE zastosuj_do_pliku(dxf, material, tablice_dwuklasowe) pod flaga --transformuj-gwint: luk USUN, okrag POWIEKSZ wg KLASY materialu (config/gwinty.yaml: trudnoscieralne M12=10.6 / zwykle M12=10.2, oba potwierdzone 08.07), CZERWONY; nieznana wartosc/M? -> ZOSTAW oznaczony ZOLTO (kotwica operatora). Golden gwint_hb450 (8x M12 HB450). Rdzen: fable-advisor (0 falszywych na 88 plikach)"
     plik: produkcja/kontrola/gwint.py
     test: "python testy\\test_gwint_hardox_transformacja.py"
 
