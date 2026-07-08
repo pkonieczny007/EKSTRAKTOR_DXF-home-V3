@@ -309,8 +309,19 @@ NIE zapisujemy jako OK. Żaden wariant nie omija QC.
 > na laser, nawet gdy otwory się zgadzają. **Wymiar OK nie zwalnia z kontroli konturów.**
 
 Każdy detal (także 🟢 z silnika) MUSI przejść **wszystkie trzy** kontrole, zanim status
-może być 🟢. Kolejność: liczbowa → wizualna → **ZAWSZE na końcu zamknięte kontury**:
+może być 🟢. Kolejność: SKALA → liczbowa → wizualna → **ZAWSZE na końcu zamknięte kontury**:
 
+0. **SKALA + GABARYT — PRIORYTET, per detal (nie na cały rysunek)** *(2026-07-08, 51730649)*:
+   pojedyncze pozycje DOSYĆ CZĘSTO mają inną skalę niż reszta arkusza (realny przypadek:
+   rysunek 1:5, ale Pos6 = 1:2 → detal 2,5× za mały, gdyby założyć 1:5). Założenie jednej
+   skali na cały rysunek = błąd niedoświadczonego technologa. **Skalę KAŻDEGO detalu
+   ustalać z jego WŁASNYCH wymiarów** (`DIMENSION.get_measurement()` vs liczba z `dxf.text`
+   przy tym widoku). Wolno zasugerować się skalą sąsiada — ale sprawdzaj ją PIERWSZĄ na
+   nowym detalu (OK → jedź dalej; nie → szukaj nowej), NIGDY nie zakładaj bez potwierdzenia.
+   Pomiar gotowego DXF = **GABARYT (skrajne extents), nie do krawędzi otworu**: `$EXTMIN`/
+   `$EXTMAX` z nagłówka → W=maxX−minX, H=maxY−minY (wzór: `archiwum\tmp\3.2.2 - dxf_reader.py`);
+   porównanie z wykazem: W,H ∈ {Abmess_1, Abmes_2} ±1 = OK (błąd „do otworu": 132 zamiast
+   145 na Pos3). Skala+pomiar to obowiązkowy krok QC, nie opcja.
 1. **LICZBOWA — bilans konturów/otworów region vs wynik** (bramka 4+5): kontury wewnętrzne
    + okręgi **PO DEDUPIE współśrodkowych** w REGIONIE źródłowym (bbox widoku / klaster,
    cała geometria oprócz gięcia kol.6 i osi) vs w WYNIKU. delta ≥1 konturu **lub** ≥1

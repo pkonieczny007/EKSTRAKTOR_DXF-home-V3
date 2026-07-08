@@ -5,9 +5,9 @@ oczekiwania co `testy/regresja.py`. V2 wygrywa dopiero gdy >= V1
 na kazdym sprawdzeniu, a pliki sa geometrycznie zgodne.
 
 - sprawdzenia: V1 **42/42**, V2 **42/42**
-- pliki DXF identyczne encja-po-encji (V1 vs V2): **36**
-- pliki rozne: **0**, brakujace w V2: **0**
-- werdykt: **V2 >= V1 (PASS)**
+- pliki DXF identyczne encja-po-encji (V1 vs V2): **35**
+- pliki rozne: **1**, brakujace w V2: **0**
+- werdykt: **V2 PONIZEJ V1 (FAIL)**
 
 | rysunek | V1 | V2 | pliki |
 |---|---|---|---|
@@ -22,7 +22,7 @@ na kazdym sprawdzeniu, a pliki sa geometrycznie zgodne.
 | SL400521100 | 2/2 | 2/2 | 2 identycznych |
 | SL40052423 | 1/1 | 1/1 | 1 identycznych |
 | SL40071940 | 1/1 | 1/1 | 1 identycznych |
-| SL10578806 | 3/3 | 3/3 | 1 identycznych |
+| SL10578806 | 3/3 | 3/3 | 0 identycznych, ROZNE: SL10578806_p4.dxf (14 roznic) |
 | SL40885240 | 1/1 | 1/1 | 1 identycznych |
 | SL10584235 | 1/1 | 1/1 | 1 identycznych |
 | SL10584244 | 1/1 | 1/1 | 1 identycznych |
