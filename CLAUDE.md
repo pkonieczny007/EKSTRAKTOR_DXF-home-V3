@@ -9,12 +9,18 @@
 > Narzędzie opiera się na **lokalnych skillach i skryptach Python — AI ich używa,
 > nie zastępuje**. Cel: V3 > V2 > V1 (mierzalnie, benchmarkiem).
 
-## Stan (04.07.2026) — SZKIELET ZBUDOWANY, PARYTET Z V2 ZWERYFIKOWANY
+## Stan (08.07.2026) — ETAPY 0–3 DOMKNIĘTE, RANKING UTWARDZONY, GWINT HARDOX
 
-Struktura z tego pliku istnieje i działa: silniki przeniesione z V2 (kopie — tam nie
-piszemy), **regresja 43/43 PASS, testy_v2 35/35 PASS, benchmark V2≥V1 PASS — w V3**;
-orkiestrator V3 (typowanie + delegacja do W-B) przeszedł smoke-test end-to-end.
-Etapy i kryteria: `PLAN.md` (etap 0 ✅, etap 1 ✅/do obserwacji, etapy 2–6 ⬜).
+Pełny tor V3 działa jedną komendą (`przebieg.py`: orkiestrator→raport→sprawdź AI→sweep→
+galeria→metryka). **Regresja 43/43, testy_v2 35/35, benchmark_v3 V3≥V2 0 regresji, wszystkie
+--szybko 28/28.** Domyślnie **wielowariantowość** (W-A/W-B/W-C + ocena wybiera zwycięzcę).
+Etapy 0–3 ✅; 4–6 🔨 (infra gotowa: pipeline→AI→galeria→etykiety→metryka; brak realnego
+zlecenia end-to-end + kalibracji typowania). Sesja 08.07: **utwardzenie rankingu**
+(R1 krzyż-osi kolor-6→axis, R2 adnotacja gięcia→najbliższy klaster, R3 awaryjny wybór→
+największy nie-izometryczny — każdy golden+test), **transformacja gwintu Hardox** wpięta
+(M12→ø10,6 czerwony; REDESIGN na „żółty-domyślnie / transform-na-żądanie" W TOKU — user 08.07),
+**deploy 7 skilli** V3, **destylacja** 185 etykiet. **W-D = OPT-IN, nie inwestujemy**
+(UWAGA-pass już w W-C, V3 wygrywa 89%). Etapy i kryteria: `PLAN.md`.
 Poprzedniki (NIETYKALNE, zasada 9):
 - **V1** `C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home` — prototyp CLI + skill `/wyciagnij-dxf`.
 - **V2** `C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home-V2` — orkiestrator + kategorie + weryfikator.
