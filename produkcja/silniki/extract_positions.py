@@ -412,6 +412,26 @@ def overlaps_claimed(box, claimed, thresh=0.5):
     return False
 
 
+def _pick_fallback_geo(clusters, dims, bend_texts):
+    """Awaryjny wybor widoku, gdy ZADEN klaster nie pasuje proporcja do wykazu (R3).
+    NIE sam argmax geo: drobny klaster o wysokim geo (detal 40x16, symbol 22x22) bije
+    wieksze rozwiniecie, bo kara open_ends za wchloniete linie wymiarowe zaniza geo
+    prawdziwej czesci (zmierzone SL40047020: 40x16 geo+1 > 62x53 geo-1; SL10582652:
+    22x22 geo+4 > 281x44 geo+2). Zasada: sposrod kandydatow ktore NIE wygladaja na
+    izometrie/rzut (geo > PROG_ANTY) wybierz NAJWIEKSZY powierzchnia; dopiero gdy
+    WSZYSCY wygladaja na rzut - argmax geo (najmniej zly). Zwraca (klaster, geo_klastra)."""
+    det = _detektor()
+    bt = bend_texts or []
+    kand = [c for c in clusters if len(c["entities"]) >= 8] or clusters[:1]
+    geo = {id(c): det.score_klastra(c, clusters, dims, bt)[0] for c in kand}
+    nieizo = [c for c in kand if geo[id(c)] > det.PROG_ANTY]
+    if nieizo:
+        c = max(nieizo, key=lambda cc: cc["w"] * cc["h"])
+    else:
+        c = max(kand, key=lambda cc: geo[id(cc)])
+    return c, geo[id(c)]
+
+
 def extract_position(src_doc, layer, posn, dims, out_dir, zeinr, claimed=None,
                      bend_texts=None):
     """Tryb warstwowy: pozycja NN = warstwa 1NN. Zwraca dict raportu."""
@@ -447,15 +467,11 @@ def extract_position(src_doc, layer, posn, dims, out_dir, zeinr, claimed=None,
         best = max(candidates, key=lambda cand: rank_value(
             clusters, cand, (dim_max, dim_min), bend_texts))
     else:
-        # awaryjnie (brak prop-matchu): zamiast slepo najwiekszego klastra wybierz
-        # ten, ktory NAJBARDZIEJ wyglada jak rozwiniecie (detektor: argmax geo).
-        # Chroni przed wyborem rzutu izometrycznego/bocznego o duzym bbox.
+        # awaryjnie (brak prop-matchu): NAJWIEKSZY nie-izometryczny widok, nie sam
+        # argmax geo (R3 - drobny klaster o wysokim geo bral gore nad rozwinieciem;
+        # _pick_fallback_geo). Chroni przed rzutem izometrycznym I przed drobnym detalem.
         det = _detektor()
-        bt = bend_texts or []
-        kand = [c for c in clusters if len(c["entities"]) >= 8] or clusters[:1]
-        c = max(kand, key=lambda cc: det.score_klastra(
-            cc, clusters, (dim_max, dim_min), bt)[0])
-        geo_c = det.score_klastra(c, clusters, (dim_max, dim_min), bt)[0]
+        c, geo_c = _pick_fallback_geo(clusters, (dim_max, dim_min), bend_texts)
         cw = max(c["w"], c["h"])
         scale = dim_max / cw if cw > 0 else 1.0
         best = (c, (scale, 999))

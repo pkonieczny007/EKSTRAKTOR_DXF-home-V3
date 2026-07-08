@@ -51,7 +51,17 @@ geo -> te +2 potrafi PRZEWROCIC wybor na zly klaster.
 - **Naprawa:** przypisz adnotacje giecia do NAJBLIZSZEGO klastra (jak kategoria 4 babelek),
   nie do kazdego bbox go zawierajacego. Golden: 2 widoki blisko + 1 adnotacja giecia.
 
-## RYZYKO 3 (niska/srednia) - argmax-geo w sciezce awaryjnej wybiera DROBNY klaster
+## RYZYKO 3 (niska/srednia) — ✅ NAPRAWIONE 2026-07-08 (silnik-w-a v1.2)
+**Rozwiazanie:** `_pick_fallback_geo` — w sciezce awaryjnej (extract_position, brak
+prop-matchu) sposrod kandydatow ktore NIE wygladaja na rzut (geo > PROG_ANTY) wybiera
+NAJWIEKSZY powierzchnia; dopiero gdy wszyscy wygladaja na rzut - argmax geo (jak dawniej).
+Zmierzone/potwierdzone: SL40047020 40x16(geo+1) -> 62x53(geo-1, rozwiniecie); SL10582652
+22x22(geo+4) -> 281x44(geo+2, rozwiniecie). Bez zmiany: SL10582797, SL40091010 (stary tez
+trafial). Test `testy/test_r3_fallback_rozmiar.py` (8 asercji, +dowod ze stary argmax-geo
+bral zly dla 47020/652). Bramka: regresja 43/43, detektor 24/24, benchmark_v3 0 regresji,
+testy_v2/lustro/warianty/gr4/sweep_54_4867 PASS.
+
+### (historyczny opis defektu)
 Zmierzone przez test-writera: SL40047020 sciezka awaryjna - maly klaster 40x16 (geo +1)
 WYGRYWA nad rozwinieciem 62x53 (geo -1), bo kara open_ends (wchloniete linie wymiarowe)
 spycha prawdziwa czesc ponizej szumu. Detektor moze wskazac zly, drobny klaster jako
@@ -69,9 +79,9 @@ niezmienniki realne, nie prototypowe. Do rozwazenia: czyszczenie linii wymiarowy
 liczeniem open_ends w score (spojnie z UWAGA-pass/W-D czyszczeniem).
 
 ## Kryterium naprawy (kolejnosc, kazde przez golden)
-1. ✅ RYZYKO 1 (partition krzyz osi) - ZROBIONE 08.07 (silnik-w-a v1.1). NASTEPNE:
-2. RYZYKO 3 (argmax rozmiar). 3. RYZYKO 2 (bend_annot najblizszy klaster).
-4. RYZYKO 4 (czyszczenie przed geo).
+1. ✅ RYZYKO 1 (partition krzyz osi) - ZROBIONE 08.07 (silnik-w-a v1.1).
+2. ✅ RYZYKO 3 (argmax rozmiar) - ZROBIONE 08.07 (silnik-w-a v1.2). NASTEPNE:
+3. RYZYKO 2 (bend_annot najblizszy klaster). 4. RYZYKO 4 (czyszczenie przed geo).
 Kazde: golden -> zmiana -> regresja 43/43 + benchmark_v3 + test_detektor/lustro -> potwierdzenie.
 
 ## PRZY OKAZJI ZNALEZIONE (osobne, NIE z R1)
