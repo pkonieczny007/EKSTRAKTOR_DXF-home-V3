@@ -415,6 +415,13 @@ mtime-aware) — app tylko je czyta (`send_file`, ~2 ms), zero renderu w runtime
 z 2 wskazanych folderów (`sciezki.py`), status wymiaru robust (`status_wymiaru.py`,
 gabaryt `$EXTMIN/$EXTMAX` vs Abmess ±1, skala≠1:1⇒SPRAWDZIĆ). Docelowo wpięcie generacji
 podglądów jako krok pipeline (`przebieg` „g") + skill `/dxf-sprawdz`. Wzór: `APP_do_porownywania-V2`.
+**Zapis pracy (09.07):** WERDYKT/UWAGI/gięcie (sp.gięcia/Gięcie/index) lecą na bieżąco do
+`werdykty.json`+małej kopii, a przyciskiem **„Dograj do wykazu roboczego"** ZBIORCZO do
+kopii pełnego wykazu `..._SPRAWDZONE.xlsx` (`wykaz_duzy.py`; UWAGI→kol.34, gięcie→36/37/38,
+WERDYKT dopisany; oryginał nietknięty; zbiorczo bo load+save 6,9 MB ≈ 29 s). **Wyślij na
+produkcję (09.07):** „Wyślij" kopiuje gotowy DXF do `wyniki/<zeinr>/_DXF_gotowe/` pod NAZWĄ
+produkcyjną; log `_wyslane.csv` = ZERO DUPLIKATÓW (tej samej pozycji nie wyślesz 2×) +
+zaznaczenie w wykazie (kolumna WYSLANE). „Wyślij wszystkie OK" = hurtem WERDYKT=OK (`wyslij.py`).
 
 ## System testowy (`testy/`) — jedyna brama do produkcji
 
