@@ -404,6 +404,18 @@ na 1–2 znanych parach z golden (AI musi wskazać brak; nie wskaże → STOP se
 5. Pozycje 🔴 „człowiek rysuje" → rysowane ręcznie; gotowy plik trafia do golden
    jako wzorzec (przyszły trening).
 
+**PRZEGLĄDARKA DXF (standard przy tworzeniu DXF, user 08.07):** samodzielna apka Flask
+`C:\Python_CLaude\EKSTRAKTOR_DXF\APP_do_sprawdzania-V3-universal` (własny `CLAUDE.md`) —
+przegląd zlecenia wiersz-po-wierszu: **DXF gotowy · źródło-region (conv przycięty do
+bboxu) · TIF/DWG/REGION-zoom · nakładka · info z wykazu (wymiar wykaz vs DXF, skala,
+status PASUJE/SPRAWDZIĆ) · gięcie · WERDYKT/UWAGI z autozapisem do kopii wykazu**.
+Kolejność jak w wykazie, filtr ZAKUPY-blach/Nazwa, wyszukiwanie. **Rendery to artefakty
+w folderze zlecenia** (`wyniki/<zeinr>/podglad/*.png`, generuje `generuj_podglady.py`
+mtime-aware) — app tylko je czyta (`send_file`, ~2 ms), zero renderu w runtime. Ścieżki
+z 2 wskazanych folderów (`sciezki.py`), status wymiaru robust (`status_wymiaru.py`,
+gabaryt `$EXTMIN/$EXTMAX` vs Abmess ±1, skala≠1:1⇒SPRAWDZIĆ). Docelowo wpięcie generacji
+podglądów jako krok pipeline (`przebieg` „g") + skill `/dxf-sprawdz`. Wzór: `APP_do_porownywania-V2`.
+
 ## System testowy (`testy/`) — jedyna brama do produkcji
 
 - **Golden set**: pary (rysunek+wykaz → zweryfikowany DXF). Każdy typ rysunku i każdy
