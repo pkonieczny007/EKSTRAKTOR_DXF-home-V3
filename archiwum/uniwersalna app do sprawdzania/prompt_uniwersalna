@@ -1,0 +1,58 @@
+utworz wersje APP_do_sprawdzania-V3-universal - i tam będziemy
+
+poprawimy wersje V3
+
+- kolejność taka jak w wykazie
+
+wyswietlane elementy - moźrmy ustawić na podstawie czego będziemy wyświetlać elementy
+- opieramy się na kolumnie ZAKUPY - BLACHY (blacha, blach, wielkosc liter nie ma znaczenia)
+lub
+- na kolumnie Nazwa
+
+elementy z 
+dzialaniem podobnym/lub technologii jak mamy w "C:\Python_CLaude\UPGRADE_SKANER_DXF-home"
+- wyszukiwanie
+- png pliku dxf zeby sie odswiezalo gdy wejde i zmienie (wykorzystaj mechanike z "C:\Python_CLaude\UPGRADE_SKANER_DXF-home")
+
+DANE:
+Zeinr - po naciśnięciu otwiera rysunek dwg(a dokladniej dxf_conv)
+posn, 
+semafor - czyli jak zostało wskazane 
+KAFELKI
+wymiar_wykaz,
+wymiar_dxf, 
+skala, 
+status - porowanie wymiar - z dxf z wykazem - (
+zasada jak w "C:\Python_CLaude\EKSTRAKTOR_DXF\EKSTRAKTOR_DXF-home-V3\archiwum\tmp\3.2.2 - dxf_reader.py"
+gdy mamy prawda - prawda, wtedy dajemy zielone PASUJE (zamiast ok) - jezeli fałsz wtedy SPRAWDZIC WYMIAR czerwone
+)
+Technologia(Giecie) - analogicznie jak w UPGRADE_SKANER_DXF-home - 
+tylko 3 kolumny do wpiywania z wykazu:
+sposób gięcia	Gięcie	index
+
+
+Linki do folderów 
+wskazac gdzie mamy pliki dxf i png
+wskazac rysunki dwg(a dokladniej dxf_conv) i tiff
+
+KAFELKI:
+
+- DXF GOTOWY	
+- ZRODLO (region)
+conv / tif / dwg	[tutaj obok DWG, przycisk REGION-otwiera rysunek dxf-conv w regionie]
+-nakladka 
+wynik-zrodlo 
+
+po kafelkach 
+info uwagi 
+
+
+Do poprawy
+werdykt na początku umiejscowiony.
+NAGŁÓWKI - nazwy kolumn zablokowane. bo teraz nie są.
+
+Wykorzystaj do trudnych rzeczy wymagajacych myslenia Advisora Fable
+
+
+
+

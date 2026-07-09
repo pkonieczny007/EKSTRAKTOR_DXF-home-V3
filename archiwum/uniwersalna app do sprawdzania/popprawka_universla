@@ -1,0 +1,7 @@
+a musi byc ten cache? albo w innej formie
+ chcialem zeby pliki region byly  tworzone 
+po wygenerowaniu dxf i byly w folderze zlecenia. 
+wtedy tylko byś odczytywał stamtąd. 
+nakładki tak samo i DXF gotowy. Jedynie podczas zmiany dxf 
+DXF gotowy by się zmieniał, już nakladek bysmy nie ruszali. 
+
